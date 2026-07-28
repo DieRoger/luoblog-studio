@@ -10,7 +10,7 @@ from domain.parsing import DocumentParser
 from domain.embedding import EmbeddingService
 from domain.errors import AppError
 from infrastructure.storage.local_fs import DocumentStorage
-from infrastructure.persistence.repositories import DocumentRepository, ChunkRepository
+from infrastructure.persistence.repositories import DocumentRepository, ChunkRepository, TagRepository as TagRepoImpl
 from infrastructure.embedding.api_embedding import LiteLLMEmbeddingService
 from services.pipeline import KnowledgePipelineService
 from config import settings
@@ -79,7 +79,9 @@ async def search_knowledge(
     q: str = Query(..., min_length=1, description="Search query"),
     top_k: int = Query(10, ge=1, le=50),
     search_type: str = Query("hybrid", regex="^(vector|hybrid)$"),
+    tags: str = Query(None, description="Comma-separated tag names to filter by"),
     pipeline: KnowledgePipelineService = Depends(get_pipeline_service),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Search indexed documents by semantic similarity + keyword.
 
@@ -87,12 +89,20 @@ async def search_knowledge(
         q: Natural language query string.
         top_k: Number of results (default 10, max 50).
         search_type: 'vector' for pure vector search, 'hybrid' for BM25 + vector.
+        tags: Optional comma-separated tag names. Only documents with ALL tags returned.
 
     Returns:
         List of matched chunks with document title, section, page, and relevance score.
     """
     try:
-        results = await pipeline.search(query=q, top_k=top_k, search_type=search_type)
+        doc_ids = None
+        if tags:
+            tag_names = [t.strip() for t in tags.split(",") if t.strip()]
+            if tag_names:
+                tag_repo = TagRepoImpl(db)
+                matching = await tag_repo.search_by_tags(tag_names)
+                doc_ids = set(matching)
+        results = await pipeline.search(query=q, top_k=top_k, search_type=search_type, doc_ids=doc_ids)
     except AppError:
         raise
     except Exception as exc:

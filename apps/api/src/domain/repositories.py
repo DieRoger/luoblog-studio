@@ -93,3 +93,34 @@ class AgentTaskRepository(ABC):
 
     @abstractmethod
     async def list_recent(self, limit: int = 20) -> Sequence[AgentTask]: ...
+
+
+class TagRepository(ABC):
+    """Tag CRUD + document/article association."""
+
+    @abstractmethod
+    async def create(self, name: str, is_ai_generated: bool = False) -> "Tag": ...
+
+    @abstractmethod
+    async def get_by_id(self, tag_id: UUID) -> "Tag | None": ...
+
+    @abstractmethod
+    async def get_by_name(self, name: str) -> "Tag | None": ...
+
+    @abstractmethod
+    async def list_all(self) -> Sequence["Tag"]: ...
+
+    @abstractmethod
+    async def delete(self, tag_id: UUID) -> None: ...
+
+    @abstractmethod
+    async def add_to_document(self, document_id: UUID, tag_id: UUID) -> None: ...
+
+    @abstractmethod
+    async def remove_from_document(self, document_id: UUID, tag_id: UUID) -> None: ...
+
+    @abstractmethod
+    async def get_document_tags(self, document_id: UUID) -> Sequence["Tag"]: ...
+
+    @abstractmethod
+    async def search_by_tags(self, tag_names: list[str]) -> Sequence[UUID]: ...

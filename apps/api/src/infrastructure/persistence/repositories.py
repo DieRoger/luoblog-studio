@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete as sa_delete, and_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,7 +11,11 @@ from domain.entities import Document
 from domain.enums import DocumentStatus, FileType
 from domain.errors import AppError, NotFoundError
 from domain.repositories import DocumentRepository as DocRepoABC
-from infrastructure.persistence.models import DocumentModel
+from infrastructure.persistence.models import (
+    DocumentModel,
+    TagModel,
+    DocumentTagModel,
+)
 
 
 class DocumentRepository(DocRepoABC):
@@ -235,3 +239,76 @@ def _chunk_to_entity(m: "DocumentChunkModel") -> "DocumentChunk":
         token_count=m.token_count,
         metadata=m.metadata if isinstance(m.metadata, dict) else {},
     )
+
+
+class TagRepository:
+    """SQLAlchemy implementation of TagRepository ABC."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def create(self, name: str, is_ai_generated: bool = False) -> TagModel:
+        orm = TagModel(name=name, is_ai_generated=is_ai_generated)
+        self._session.add(orm)
+        await self._session.flush()
+        await self._session.refresh(orm)
+        return orm
+
+    async def get_by_id(self, tag_id: UUID) -> TagModel | None:
+        return await self._session.get(TagModel, tag_id)
+
+    async def get_by_name(self, name: str) -> TagModel | None:
+        stmt = select(TagModel).where(TagModel.name == name)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def list_all(self) -> list[TagModel]:
+        stmt = select(TagModel).order_by(TagModel.name)
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def delete(self, tag_id: UUID) -> None:
+        orm = await self._session.get(TagModel, tag_id)
+        if orm is None:
+            raise NotFoundError("Tag", str(tag_id))
+        await self._session.delete(orm)
+        await self._session.flush()
+
+    async def add_to_document(self, document_id: UUID, tag_id: UUID) -> None:
+        self._session.add(DocumentTagModel(document_id=document_id, tag_id=tag_id))
+        try:
+            await self._session.flush()
+        except IntegrityError:
+            await self._session.rollback()
+            # Duplicate (document_id, tag_id) — ignore silently
+
+    async def remove_from_document(self, document_id: UUID, tag_id: UUID) -> None:
+        stmt = sa_delete(DocumentTagModel).where(
+            and_(DocumentTagModel.document_id == document_id, DocumentTagModel.tag_id == tag_id)
+        )
+        await self._session.execute(stmt)
+        await self._session.flush()
+
+    async def get_document_tags(self, document_id: UUID) -> list[TagModel]:
+        stmt = (
+            select(TagModel)
+            .join(DocumentTagModel, DocumentTagModel.tag_id == TagModel.id)
+            .where(DocumentTagModel.document_id == document_id)
+            .order_by(TagModel.name)
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def search_by_tags(self, tag_names: list[str]) -> list[UUID]:
+        """Return document IDs that have ALL specified tags."""
+        if not tag_names:
+            return []
+        stmt = (
+            select(DocumentTagModel.document_id)
+            .join(TagModel, TagModel.id == DocumentTagModel.tag_id)
+            .where(TagModel.name.in_(tag_names))
+            .group_by(DocumentTagModel.document_id)
+            .having(func.count(DocumentTagModel.tag_id) == len(tag_names))
+        )
+        result = await self._session.execute(stmt)
+        return [row[0] for row in result]

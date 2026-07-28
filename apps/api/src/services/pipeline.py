@@ -105,6 +105,7 @@ class KnowledgePipelineService:
         query: str,
         top_k: int = 10,
         search_type: str = "hybrid",
+        doc_ids: set[UUID] | None = None,
     ) -> list[dict]:
         """Search the knowledge base.
 
@@ -112,6 +113,7 @@ class KnowledgePipelineService:
             query: Natural language query.
             top_k: Number of results to return.
             search_type: "vector", "hybrid"
+            doc_ids: Optional set of document IDs to restrict search to.
 
         Returns:
             List of { chunk, score, document_title, section, page }.
@@ -127,6 +129,8 @@ class KnowledgePipelineService:
 
         output = []
         for chunk, score in results:
+            if doc_ids and chunk.document_id not in doc_ids:
+                continue
             doc = await self._doc_repo.get_by_id(chunk.document_id)
             output.append({
                 "chunk_id": str(chunk.id),
