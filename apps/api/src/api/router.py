@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from api.routers import documents
+from api.routers import documents, knowledge
 
 api_router = APIRouter()
 
@@ -13,3 +13,4 @@ async def health_check() -> dict:
 
 # Feature routers
 api_router.include_router(documents.router)
+api_router.include_router(knowledge.router)
