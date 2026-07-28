@@ -4,9 +4,11 @@ Pipeline:
   Topic → Research (Knowledge Hub) → Outline (LLM) → Write (LLM) → Assemble (Citations)
 """
 
+import asyncio
 import json
+import re
+import time
 from pathlib import Path
-from uuid import UUID
 
 from config import settings
 from domain.embedding import EmbeddingService
@@ -17,6 +19,9 @@ from logging_config import get_logger
 
 logger = get_logger(__name__)
 
+MAX_RETRIES = 3
+RETRY_BASE_DELAY = 1.0  # seconds
+
 
 class WritingAgent:
     """Generate technical blog drafts using Knowledge Hub + LLM."""
@@ -26,10 +31,13 @@ class WritingAgent:
         embedder: EmbeddingService,
         chunk_repo: ChunkRepository,
         doc_repo: DocumentRepository,
+        max_tokens: int = 8192,
     ) -> None:
         self._embedder = embedder
         self._chunk_repo = chunk_repo
         self._doc_repo = doc_repo
+        self._max_tokens = max_tokens
+        self._system_prompt = self._load_system_prompt()
 
     async def write(
         self,
@@ -41,7 +49,7 @@ class WritingAgent:
 
         1. Search knowledge base for relevant context
         2. Generate outline from search results
-        3. Write each section with citations
+        3. Write each section with citations (parallel)
         4. Assemble into final result
         """
         # Step 1: Research
@@ -60,11 +68,17 @@ class WritingAgent:
         logger.info("writing.outline", topic=topic)
         outline = await self._generate_outline(topic, context_str, max_sections)
 
-        # Step 3: Write sections
-        logger.info("writing.sections", topic=topic, sections=len(outline))
-        sections = await self._write_sections(topic, outline, context_str)
+        # Step 3: Write sections in parallel
+        headings = outline.get("sections", [])
+        logger.info("writing.sections", topic=topic, sections=len(headings))
 
-        # Step 4: Assemble with citations
+        tasks = [
+            self._write_single_section(topic, h, context_str)
+            for h in headings
+        ]
+        sections = await asyncio.gather(*tasks)
+
+        # Step 4: Assemble
         logger.info(
             "writing.completed",
             topic=topic,
@@ -107,62 +121,50 @@ class WritingAgent:
         self, topic: str, context: str, max_sections: int
     ) -> dict:
         """Generate JSON outline from topic + research context."""
-        prompt = f"""You are a technical writing assistant. Given a topic and research context, generate an article outline.
-
-Topic: {topic}
-
-Research Context (top results from knowledge base):
-{context}
-
-Generate a JSON object with:
-- "title": article title
-- "summary": 1-2 sentence summary
-- "sections": list of {max_sections} section headings
-
-The article should be technical, evidence-driven, and follow this structure:
-1. Background / Problem
-2. Approach / Architecture
-3. Implementation Details
-4. Lessons Learned
-5. Conclusion
-
-Return ONLY valid JSON, no markdown formatting."""
+        prompt = (
+            f"You are a technical writing assistant. Given a topic and research context, "
+            f"generate an article outline.\n\n"
+            f"Topic: {topic}\n\n"
+            f"Research Context (top results from knowledge base):\n{context}\n\n"
+            f"Generate a JSON object with:\n"
+            f'- "title": article title\n'
+            f'- "summary": 1-2 sentence summary\n'
+            f'- "sections": list of {max_sections} section headings\n\n'
+            f"The article should be technical, evidence-driven, and follow this structure:\n"
+            f"1. Background / Problem\n"
+            f"2. Approach / Architecture\n"
+            f"3. Implementation Details\n"
+            f"4. Lessons Learned\n"
+            f"5. Conclusion\n\n"
+            f"Return ONLY valid JSON, no markdown formatting."
+        )
         raw = await self._call_llm(prompt)
         return self._parse_json(raw, {"title": topic, "summary": "", "sections": []})
 
     # ------------------------------------------------------------------
-    # Step 3: Write sections
+    # Step 3: Write a single section
     # ------------------------------------------------------------------
 
-    async def _write_sections(
-        self, topic: str, outline: dict, context: str
-    ) -> list[Section]:
-        """Write each section with inline citations."""
-        sections = []
-        for heading in outline.get("sections", []):
-            prompt = f"""You are a technical writer with deep AI engineering expertise.
-
-Article Topic: {topic}
-Section Heading: {heading}
-
-Research Context (use this for evidence and citations):
-{context}
-
-Write the section content in 2-3 paragraphs. Follow these rules:
-1. Start with a real engineering problem or insight
-2. Use specific evidence from the research context
-3. Include inline citations like [Source: Document Title]
-4. End with a practical takeaway
-5. Be specific and technical — avoid generic statements
-
-Return ONLY the section content as plain text (no metadata)."""
-            raw = await self._call_llm(prompt)
-
-            # Extract citations from the research results
-            citations = self._extract_citations(context, heading)
-
-            sections.append(Section(heading=heading, content=raw.strip(), citations=citations))
-        return sections
+    async def _write_single_section(
+        self, topic: str, heading: str, context: str
+    ) -> Section:
+        """Write one section with inline citations."""
+        prompt = (
+            f"You are a technical writer with deep AI engineering expertise.\n\n"
+            f"Article Topic: {topic}\n"
+            f"Section Heading: {heading}\n\n"
+            f"Research Context (use this for evidence and citations):\n{context}\n\n"
+            f"Write the section content in 2-3 paragraphs. Follow these rules:\n"
+            f"1. Start with a real engineering problem or insight\n"
+            f"2. Use specific evidence from the research context\n"
+            f"3. Include inline citations like [Source: Document Title]\n"
+            f"4. End with a practical takeaway\n"
+            f"5. Be specific and technical — avoid generic statements\n\n"
+            f"Return ONLY the section content as plain text (no metadata)."
+        )
+        raw = await self._call_llm(prompt)
+        citations = self._extract_citations(context)
+        return Section(heading=heading, content=raw.strip(), citations=citations)
 
     # ------------------------------------------------------------------
     # Helpers
@@ -181,10 +183,8 @@ Return ONLY the section content as plain text (no metadata)."""
         return "\n\n".join(lines)
 
     @staticmethod
-    def _extract_citations(context: str, heading: str) -> list[Citation]:
-        """Extract citations from context — heuristic: match [N] references."""
-        import re
-
+    def _extract_citations(context: str) -> list[Citation]:
+        """Extract citations from context — match [N] From: Title patterns."""
         citations = []
         seen = set()
         for match in re.finditer(r"\[(\d+)\]\s*From:\s*([^|\n]+)", context):
@@ -195,30 +195,9 @@ Return ONLY the section content as plain text (no metadata)."""
                 citations.append(Citation(source_title=title, chunk_content="", score=0.0))
         return citations
 
-    # ------------------------------------------------------------------
-    # LLM
-    # ------------------------------------------------------------------
-
-    async def _call_llm(self, prompt: str) -> str:
-        """Call the configured LLM via LiteLLM."""
-        try:
-            import litellm
-
-            response = await litellm.acompletion(
-                model=f"{settings.llm_provider}/{settings.llm_model}",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.7,
-                max_tokens=4096,
-            )
-            return response.choices[0].message.content or ""
-        except Exception as exc:
-            logger.exception("writing.llm_failed")
-            raise LLMError(f"LLM call failed: {exc}") from exc
-
     @staticmethod
     def _parse_json(raw: str, default: dict) -> dict:
         """Try to parse JSON from LLM response, fallback to default."""
-        # Strip markdown code fences if present
         cleaned = raw.strip()
         if cleaned.startswith("```"):
             cleaned = cleaned.split("\n", 1)[-1]
@@ -228,3 +207,97 @@ Return ONLY the section content as plain text (no metadata)."""
         except json.JSONDecodeError:
             logger.warning("writing.json_parse_failed", raw_preview=raw[:200])
             return default
+
+    # ------------------------------------------------------------------
+    # System prompt
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _load_system_prompt() -> str:
+        """Load writing system prompt from file, with fallback."""
+        prompt_path = Path(__file__).resolve().parents[4] / "agents" / "prompts" / "writing" / "system.md"
+        try:
+            if prompt_path.exists():
+                text = prompt_path.read_text(encoding="utf-8")
+                # Strip YAML frontmatter (--- ... ---)
+                if text.startswith("---"):
+                    parts = text.split("---", 2)
+                    if len(parts) >= 3:
+                        text = parts[2].strip()
+                return text
+        except Exception as exc:
+            logger.warning("writing.prompt_load_failed", path=str(prompt_path), error=str(exc))
+        return "You are a technical writing assistant. Write clear, evidence-driven technical articles."
+
+    # ------------------------------------------------------------------
+    # LLM with retry
+    # ------------------------------------------------------------------
+
+    async def _call_llm(self, prompt: str) -> str:
+        """Call the configured LLM via LiteLLM with retry + exponential backoff."""
+        last_exc = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                import litellm
+
+                response = await litellm.acompletion(
+                    model=f"{settings.llm_provider}/{settings.llm_model}",
+                    messages=[
+                        {"role": "system", "content": self._system_prompt},
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.7,
+                    max_tokens=self._max_tokens,
+                )
+                content = response.choices[0].message.content or ""
+
+                # Track token usage
+                if hasattr(response, "usage") and response.usage:
+                    logger.info(
+                        "writing.llm_ok",
+                        prompt_tokens=response.usage.prompt_tokens,
+                        completion_tokens=response.usage.completion_tokens,
+                        attempt=attempt + 1,
+                    )
+                return content
+
+            except Exception as exc:
+                last_exc = exc
+                is_retryable = _is_retryable_error(exc)
+                if not is_retryable or attempt == MAX_RETRIES - 1:
+                    logger.exception(
+                        "writing.llm_failed",
+                        attempt=attempt + 1,
+                        max_retries=MAX_RETRIES,
+                    )
+                    raise LLMError(f"LLM call failed after {attempt + 1} attempt(s): {exc}") from exc
+
+                delay = RETRY_BASE_DELAY * (2 ** attempt)
+                logger.warning(
+                    "writing.llm_retry",
+                    attempt=attempt + 1,
+                    delay_sec=delay,
+                    error=str(exc)[:100],
+                )
+                await asyncio.sleep(delay)
+
+        raise LLMError(f"LLM call failed: {last_exc}") from last_exc
+
+
+# ---------------------------------------------------------------------------
+# Module-level helpers
+# ---------------------------------------------------------------------------
+
+
+def _is_retryable_error(exc: Exception) -> bool:
+    """Check if the error is likely transient (rate limit, timeout, 5xx)."""
+    msg = str(exc).lower()
+    if "rate limit" in msg or "rate_limit" in msg:
+        return True
+    if "timeout" in msg:
+        return True
+    if "503" in msg or "502" in msg or "429" in msg:
+        return True
+    if "service unavailable" in msg:
+        return True
+    return False

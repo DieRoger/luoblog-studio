@@ -102,13 +102,13 @@ class TestWritingAgentCore:
 
     def test_extract_citations(self, agent: WritingAgent) -> None:
         context = "[1] From: Paper A\n[2] From: Paper B\n"
-        citations = agent._extract_citations(context, "Intro")
+        citations = agent._extract_citations(context)
         assert len(citations) == 2
         assert citations[0].source_title == "Paper A"
 
     def test_extract_citations_dedup(self, agent: WritingAgent) -> None:
         context = "[1] From: Same Paper\n[1] From: Same Paper\n"
-        citations = agent._extract_citations(context, "Intro")
+        citations = agent._extract_citations(context)
         assert len(citations) == 1
 
 
