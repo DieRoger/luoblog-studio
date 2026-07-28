@@ -15,6 +15,7 @@ from infrastructure.persistence.models import (
     DocumentModel,
     TagModel,
     DocumentTagModel,
+    ArticleModel,
 )
 
 
@@ -312,3 +313,88 @@ class TagRepository:
         )
         result = await self._session.execute(stmt)
         return [row[0] for row in result]
+
+
+class ArticleRepository:
+    """SQLAlchemy implementation of ArticleRepository ABC."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def save(self, article: "Article") -> "Article":
+        from domain.entities import Article as A
+
+        orm = ArticleModel(
+            id=article.id,
+            title=article.title,
+            slug=article.slug or article.title.lower().replace(" ", "-"),
+            summary=article.summary,
+            content=article.content,
+            status=article.status.value,
+            quality_score=article.quality_score,
+            topics=list(article.topics) if article.topics else [],
+        )
+        self._session.add(orm)
+        await self._session.flush()
+        await self._session.refresh(orm)
+        return _article_to_entity(orm)
+
+    async def get_by_id(self, article_id: UUID) -> "Article | None":
+        from domain.entities import Article as A
+
+        orm = await self._session.get(ArticleModel, article_id)
+        return _article_to_entity(orm) if orm else None
+
+    async def list_all(
+        self, status: str | None = None, limit: int = 50, offset: int = 0
+    ) -> tuple[list["Article"], int]:
+        from domain.entities import Article as A
+
+        base = select(ArticleModel).where(ArticleModel.deleted_at.is_(None))
+        count_q = select(func.count()).select_from(ArticleModel).where(
+            ArticleModel.deleted_at.is_(None)
+        )
+        if status:
+            base = base.where(ArticleModel.status == status)
+            count_q = count_q.where(ArticleModel.status == status)
+        base = base.order_by(ArticleModel.created_at.desc()).offset(offset).limit(limit)
+
+        rows = await self._session.execute(base)
+        total = (await self._session.execute(count_q)).scalar_one()
+        return [_article_to_entity(r) for r in rows.scalars().all()], total
+
+    async def delete(self, article_id: UUID) -> None:
+        from domain.entities import Article as A
+
+        orm = await self._session.get(ArticleModel, article_id)
+        if orm is None:
+            raise NotFoundError("Article", str(article_id))
+        orm.deleted_at = datetime.now(timezone.utc)
+        await self._session.flush()
+
+    async def update_status(self, article_id: UUID, status: str) -> None:
+        orm = await self._session.get(ArticleModel, article_id)
+        if orm is None:
+            raise NotFoundError("Article", str(article_id))
+        orm.status = status
+        orm.updated_at = datetime.now(timezone.utc)
+        await self._session.flush()
+
+
+def _article_to_entity(m: ArticleModel) -> "Article":
+    from domain.entities import Article as A
+    from domain.enums import ArticleStatus
+
+    return A(
+        id=m.id,
+        title=m.title,
+        slug=m.slug,
+        summary=m.summary,
+        content=m.content,
+        status=ArticleStatus(m.status),
+        quality_score=m.quality_score,
+        topics=list(m.topics) if m.topics else [],
+        published_at=m.published_at.replace(tzinfo=None) if m.published_at else None,
+        created_at=m.created_at.replace(tzinfo=None) if m.created_at else None,
+        updated_at=m.updated_at.replace(tzinfo=None) if m.updated_at else None,
+    )
