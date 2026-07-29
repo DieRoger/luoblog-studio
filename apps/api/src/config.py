@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     # --- CORS ---
     cors_origins: list[str] = ["http://localhost:3000"]
 
+    # --- GitHub ---
+    github_token: str = ""
+    github_owner: str = "DieRoger"
+    github_repo: str = "luorunjie.github.io"
+
     # --- Logging ---
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     log_format: Literal["json", "console"] = "json"
