@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from api.routers import documents, knowledge, tags, articles
+from api.routers import documents, knowledge, tags, articles, agents
 
 api_router = APIRouter()
 
@@ -16,3 +16,4 @@ api_router.include_router(documents.router)
 api_router.include_router(knowledge.router)
 api_router.include_router(tags.router)
 api_router.include_router(articles.router)
+api_router.include_router(agents.router)
