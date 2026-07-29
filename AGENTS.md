@@ -83,3 +83,38 @@ Run: `cd apps/api && pytest ../../tests/ -v`
 | `apps/api/src/domain/` | Core business objects |
 | `apps/api/src/config.py` | All configuration via pydantic-settings |
 | `.env.example` | Environment variable reference |
+
+## Module Completion Workflow
+
+Every completed module must generate a blog post. This is not optional.
+
+### Step Sequence
+
+```
+1. Implement module (5-step: analyze → design → model → test → code)
+2. Write tests (unit + failure + edge + performance)
+3. Principal Engineer Review (architecture → code quality → AI reliability → production readiness)
+4. Fix all Critical and Major issues
+5. Run full test suite — must pass 100%
+6. Write blog post → docs/blog/NNN-name.md
+7. Commit + push to GitHub
+```
+
+### Blog Writing Rules
+
+Use the same prompt structure every time (see `blog_rules.md` and `CONTENT_STRATEGY.md`):
+
+- **Title**: Engineering-focused, specific to the module
+- **Sections**: Background → Initial Design → Problems Encountered → Trade-offs → Final Design → Implementation Notes → Lessons Learned → Key Takeaways
+- **Tone**: Professional, honest, evidence-driven. Write as an engineer documenting a real project, not a teacher or marketer.
+- **Evidence**: Include test counts, before/after comparisons, architecture diagrams (Mermaid).
+- **Code**: Show snippets only when they explain an important engineering decision. Never explain code line by line.
+- **Length**: Medium article (2000-3500 words) or Deep dive (4000-7000 words).
+
+### Blog Naming Convention
+
+```
+docs/blog/NNN-module-name.md
+```
+
+Where NNN is a 3-digit sequential number (001, 002, ...).
