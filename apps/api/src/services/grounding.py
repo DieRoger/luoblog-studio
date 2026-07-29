@@ -86,6 +86,7 @@ class GroundingChecker:
             claim_text=claim,
             is_grounded=is_grounded,
             confidence=round(best_score, 4),
+            chunk_id=str(best_chunk.id),
             source_title=source_title,
             source_content=best_chunk.content[:200],
             source_score=round(best_score, 4),

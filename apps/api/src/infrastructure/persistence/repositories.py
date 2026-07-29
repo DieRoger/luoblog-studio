@@ -16,6 +16,8 @@ from infrastructure.persistence.models import (
     TagModel,
     DocumentTagModel,
     ArticleModel,
+    ClaimModel,
+    EvidenceModel,
 )
 
 
@@ -397,4 +399,103 @@ def _article_to_entity(m: ArticleModel) -> "Article":
         published_at=m.published_at.replace(tzinfo=None) if m.published_at else None,
         created_at=m.created_at.replace(tzinfo=None) if m.created_at else None,
         updated_at=m.updated_at.replace(tzinfo=None) if m.updated_at else None,
+    )
+
+
+class ClaimRepository:
+    """SQLAlchemy implementation of ClaimRepository ABC."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def save(self, claim: "Claim") -> "Claim":
+        from domain.entities import Claim as C
+
+        orm = ClaimModel(
+            id=claim.id,
+            article_id=claim.article_id,
+            content=claim.content,
+            status=claim.status.value,
+            position=claim.position,
+        )
+        self._session.add(orm)
+        await self._session.flush()
+        await self._session.refresh(orm)
+        return _claim_to_entity(orm)
+
+    async def get_by_article(self, article_id: UUID) -> list["Claim"]:
+        from domain.entities import Claim as C
+
+        stmt = select(ClaimModel).where(ClaimModel.article_id == article_id).order_by(ClaimModel.position)
+        result = await self._session.execute(stmt)
+        return [_claim_to_entity(r) for r in result.scalars().all()]
+
+
+class EvidenceRepository:
+    """SQLAlchemy implementation of EvidenceRepository ABC."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def save(self, evidence: "Evidence") -> "Evidence":
+        from domain.entities import Evidence as E
+
+        orm = EvidenceModel(
+            id=evidence.id,
+            chunk_id=evidence.chunk_id,
+            claim_id=evidence.claim_id,
+            source_type=evidence.source_type.value,
+            content=evidence.content,
+            source_location=evidence.source_location,
+            confidence=evidence.confidence,
+            metadata=evidence.metadata,
+        )
+        self._session.add(orm)
+        await self._session.flush()
+        await self._session.refresh(orm)
+        return _evidence_to_entity(orm)
+
+    async def get_by_claim(self, claim_id: UUID) -> list["Evidence"]:
+        from domain.entities import Evidence as E
+
+        stmt = select(EvidenceModel).where(EvidenceModel.claim_id == claim_id)
+        result = await self._session.execute(stmt)
+        return [_evidence_to_entity(r) for r in result.scalars().all()]
+
+    async def get_by_chunk(self, chunk_id: UUID) -> list["Evidence"]:
+        from domain.entities import Evidence as E
+
+        stmt = select(EvidenceModel).where(EvidenceModel.chunk_id == chunk_id)
+        result = await self._session.execute(stmt)
+        return [_evidence_to_entity(r) for r in result.scalars().all()]
+
+
+def _claim_to_entity(m: ClaimModel) -> "Claim":
+    from domain.entities import Claim as C
+    from domain.enums import ClaimStatus
+
+    return C(
+        id=m.id,
+        article_id=m.article_id,
+        content=m.content,
+        status=ClaimStatus(m.status),
+        position=m.position,
+        created_at=m.created_at.replace(tzinfo=None) if m.created_at else None,
+    )
+
+
+def _evidence_to_entity(m: EvidenceModel) -> "Evidence":
+    from domain.entities import Evidence as E
+    from domain.enums import SourceType
+
+    return E(
+        id=m.id,
+        chunk_id=m.chunk_id,
+        claim_id=m.claim_id,
+        source_type=SourceType(m.source_type),
+        content=m.content,
+        source_location=m.source_location,
+        confidence=m.confidence,
+        metadata=m.metadata if isinstance(m.metadata, dict) else {},
+        created_at=m.created_at.replace(tzinfo=None) if m.created_at else None,
     )

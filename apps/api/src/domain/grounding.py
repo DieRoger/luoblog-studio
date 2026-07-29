@@ -9,6 +9,7 @@ class ClaimVerification:
     claim_text: str
     is_grounded: bool
     confidence: float  # 0.0–1.0
+    chunk_id: str = ""
     source_title: str = ""
     source_content: str = ""
     source_score: float = 0.0
