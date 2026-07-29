@@ -42,7 +42,7 @@ class DocumentModel(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="imported")
     source_path: Mapped[str] = mapped_column(Text, nullable=False)
     file_hash: Mapped[str | None] = mapped_column(String(64), unique=True)
-    metadata: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    meta: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -73,7 +73,7 @@ class DocumentChunkModel(Base):
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     token_count: Mapped[int] = mapped_column(Integer, nullable=False)
     embedding = mapped_column(Vector(1024))  # BGE-m3 dimension
-    metadata: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    meta: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
 
     document: Mapped["DocumentModel"] = relationship(back_populates="chunks")
@@ -165,7 +165,7 @@ class EvidenceModel(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     source_location: Mapped[str] = mapped_column(Text, nullable=False)
     confidence: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
-    metadata: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    meta: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
 
     __table_args__ = (

@@ -1,7 +1,7 @@
 """Review Agent — evaluates article quality across 4 dimensions.
 
 Uses the Review Agent system prompt from agents/prompts/review/system.md.
-Output is parsed JSON → ReviewReport.
+When a GroundingChecker is provided, includes real evidence coverage data.
 """
 
 import json
@@ -17,50 +17,57 @@ from logging_config import get_logger
 logger = get_logger(__name__)
 
 MAX_RETRIES = 2
-TECHNICAL_WEIGHT = 0.35
-EVIDENCE_WEIGHT = 0.30
-WRITING_WEIGHT = 0.20
-ORIGINALITY_WEIGHT = 0.15
 
 
 class ReviewAgent:
     """Evaluate article quality using LLM + structured scoring."""
 
-    def __init__(self, system_prompt: str | None = None) -> None:
+    def __init__(
+        self,
+        system_prompt: str | None = None,
+        grounding_checker = None,
+    ) -> None:
         self._system_prompt = system_prompt or self._load_system_prompt()
+        self._checker = grounding_checker
 
     async def review(self, article_text: str, section_count: int = 0) -> ReviewReport:
-        """Review an article or section text.
-
-        Args:
-            article_text: Full article or section content to review.
-            section_count: Number of sections (0 if single section).
-
-        Returns:
-            ReviewReport with scores, issues, and summary.
-        """
         if not article_text.strip():
-            raise AppError(
-                code="EMPTY_ARTICLE",
-                message="Cannot review empty article",
-                status_code=422,
-            )
+            raise AppError(code="EMPTY_ARTICLE", message="Cannot review empty article", status_code=422)
 
-        prompt = self._build_prompt(article_text, section_count)
+        # Run Grounding Checker if available — gives real evidence data
+        grounding_context = ""
+        if self._checker:
+            try:
+                report = await self._checker.verify(article_text)
+                grounded = report.grounded_claims
+                total = report.total_claims
+                if total > 0:
+                    grounding_context = (
+                        f"\nGrounding Check Results:\n"
+                        f"- Total claims extracted: {total}\n"
+                        f"- Verified (grounded in knowledge base): {grounded}\n"
+                        f"- Unverified: {report.ungrounded_claims}\n"
+                        f"- Evidence coverage: {report.evidence_coverage:.0%}\n"
+                    )
+                    if report.ungrounded_claims > 0:
+                        grounding_context += "- Unverified claims:\n"
+                        for v in report.verifications:
+                            if not v.is_grounded:
+                                grounding_context += f"  * \"{v.claim_text[:80]}...\"\n"
+            except Exception as exc:
+                logger.warning("review.grounding_failed", error=str(exc))
+
+        prompt = self._build_prompt(article_text, section_count, grounding_context)
         raw = await self._call_llm(prompt)
         return self._parse_report(raw)
 
-    # ------------------------------------------------------------------
-    # Prompt
-    # ------------------------------------------------------------------
-
-    def _build_prompt(self, article: str, section_count: int) -> str:
+    def _build_prompt(self, article: str, section_count: int, grounding: str = "") -> str:
         context = ""
         if section_count > 0:
             context = f"\nThe article has {section_count} sections.\n"
         return (
             f"Review the following technical article:\n"
-            f"{context}\n"
+            f"{context}{grounding}\n"
             f"---ARTICLE START---\n{article}\n---ARTICLE END---"
         )
 

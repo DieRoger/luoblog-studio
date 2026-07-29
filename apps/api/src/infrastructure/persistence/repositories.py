@@ -115,7 +115,7 @@ class DocumentRepository(DocRepoABC):
             status=DocumentStatus(m.status),
             source_path=m.source_path,
             file_hash=m.file_hash,
-            metadata=m.metadata if isinstance(m.metadata, dict) else {},
+            metadata=m.meta if isinstance(m.meta, dict) else {},
             created_at=m.created_at.replace(tzinfo=None) if m.created_at else None,
             updated_at=m.updated_at.replace(tzinfo=None) if m.updated_at else None,
         )
@@ -240,7 +240,7 @@ def _chunk_to_entity(m: "DocumentChunkModel") -> "DocumentChunk":
         page=m.page,
         chunk_index=m.chunk_index,
         token_count=m.token_count,
-        metadata=m.metadata if isinstance(m.metadata, dict) else {},
+        metadata=m.meta if isinstance(m.meta, dict) else {},
     )
 
 
@@ -496,6 +496,6 @@ def _evidence_to_entity(m: EvidenceModel) -> "Evidence":
         content=m.content,
         source_location=m.source_location,
         confidence=m.confidence,
-        metadata=m.metadata if isinstance(m.metadata, dict) else {},
+        metadata=m.meta if isinstance(m.meta, dict) else {},
         created_at=m.created_at.replace(tzinfo=None) if m.created_at else None,
     )
