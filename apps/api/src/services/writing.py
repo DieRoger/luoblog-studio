@@ -202,6 +202,7 @@ class WritingAgent:
         if cleaned.startswith("```"):
             cleaned = cleaned.split("\n", 1)[-1]
             cleaned = cleaned.rsplit("```", 1)[0]
+            cleaned = cleaned.strip()
         try:
             return json.loads(cleaned)
         except json.JSONDecodeError:

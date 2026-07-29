@@ -58,6 +58,13 @@ class TestReviewParsing:
         assert report.scores.technical_accuracy == 9.0
         assert len(report.issues) == 0
 
+    def test_parse_with_language_tag(self, agent: ReviewAgent) -> None:
+        """Handle ```json prefix (not just ```)."""
+        raw = '```json\n{"scores": {"technical_accuracy": 6.5, "evidence_coverage": 4.0, "writing_quality": 7.0, "originality": 5.0}, "issues": [], "summary": "OK"}\n```'
+        report = agent._parse_report(raw)
+        assert report.scores.technical_accuracy == 6.5
+        assert report.scores.evidence_coverage == 4.0
+
     def test_parse_invalid_json_returns_fallback(self, agent: ReviewAgent) -> None:
         raw = "not json at all"
         report = agent._parse_report(raw)

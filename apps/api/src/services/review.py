@@ -111,8 +111,12 @@ class ReviewAgent:
         """Parse LLM JSON response into ReviewReport."""
         cleaned = raw.strip()
         if cleaned.startswith("```"):
+            # Remove opening fence (with optional language tag)
             cleaned = cleaned.split("\n", 1)[-1]
+            # Remove closing fence
             cleaned = cleaned.rsplit("```", 1)[0]
+            # Strip any trailing whitespace
+            cleaned = cleaned.strip()
 
         try:
             data = json.loads(cleaned)
