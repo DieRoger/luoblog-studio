@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from domain.entities import AgentTask, Article, Claim, Document, DocumentChunk, Evidence
+from domain.enums import DocumentStatus
 
 
 class DocumentRepository(ABC):
@@ -26,6 +27,12 @@ class DocumentRepository(ABC):
 
     @abstractmethod
     async def delete(self, doc_id: UUID) -> None: ...
+
+    @abstractmethod
+    async def get_by_hash(self, file_hash: str) -> Document | None: ...
+
+    @abstractmethod
+    async def update_status(self, doc_id: UUID, status: DocumentStatus) -> None: ...
 
 
 class ChunkRepository(ABC):
@@ -63,6 +70,9 @@ class ArticleRepository(ABC):
 
     @abstractmethod
     async def delete(self, article_id: UUID) -> None: ...
+
+    @abstractmethod
+    async def update_status(self, article_id: UUID, status: str) -> None: ...
 
 
 class EvidenceRepository(ABC):
