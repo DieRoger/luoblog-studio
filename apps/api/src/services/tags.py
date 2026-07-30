@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from domain.errors import AppError, NotFoundError
+from domain.errors import AppError
 from domain.repositories import TagRepository
 from logging_config import get_logger
 
@@ -21,14 +21,20 @@ class TagService:
             raise AppError(code="INVALID_TAG", message="Tag name cannot be empty", status_code=422)
         existing = await self._repo.get_by_name(name)
         if existing:
-            return {"id": str(existing.id), "name": existing.name, "is_ai_generated": existing.is_ai_generated}
+            return {
+                "id": str(existing.id),
+                "name": existing.name,
+                "is_ai_generated": existing.is_ai_generated,
+            }
         tag = await self._repo.create(name, is_ai_generated)
         logger.info("tag.created", tag_id=str(tag.id), name=name)
         return {"id": str(tag.id), "name": tag.name, "is_ai_generated": tag.is_ai_generated}
 
     async def list_tags(self) -> list[dict]:
         tags = await self._repo.list_all()
-        return [{"id": str(t.id), "name": t.name, "is_ai_generated": t.is_ai_generated} for t in tags]
+        return [
+            {"id": str(t.id), "name": t.name, "is_ai_generated": t.is_ai_generated} for t in tags
+        ]
 
     async def delete_tag(self, tag_id: UUID) -> None:
         await self._repo.delete(tag_id)

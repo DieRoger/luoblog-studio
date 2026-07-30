@@ -1,14 +1,14 @@
 """Knowledge Service — business orchestration for document import and search."""
 
+from pathlib import Path
 from uuid import UUID, uuid4
 
-from infrastructure.storage.local_fs import DocumentStorage
-from domain.repositories import DocumentRepository
 from domain.entities import Document
-from domain.enums import DocumentStatus, FileType, SUFFIX_TO_FILETYPE
+from domain.enums import SUFFIX_TO_FILETYPE, DocumentStatus, FileType
 from domain.errors import AppError, DuplicateFileError, NotFoundError
+from domain.repositories import DocumentRepository
+from infrastructure.storage.local_fs import DocumentStorage
 from logging_config import get_logger
-from pathlib import Path
 
 logger = get_logger(__name__)
 
@@ -37,16 +37,16 @@ class KnowledgeService:
 
         # Persist raw file to local storage
         doc_id = str(uuid4())
-        storage_result = self._storage.upload(
-            filename=filename, content=content, doc_id=doc_id
-        )
+        storage_result = self._storage.upload(filename=filename, content=content, doc_id=doc_id)
 
         # Dedup check
         existing = await self._repo.get_by_hash(storage_result["file_hash"])
         if existing:
             # Clean up the just-saved duplicate file
             self._storage.delete(doc_id)
-            logger.info("document.duplicate_skipped", existing_id=str(existing.id), filename=filename)
+            logger.info(
+                "document.duplicate_skipped", existing_id=str(existing.id), filename=filename
+            )
             return existing
 
         # Create domain entity
@@ -67,18 +67,20 @@ class KnowledgeService:
 
         try:
             saved = await self._repo.save(doc)
-        except DuplicateFileError:
+        except DuplicateFileError as exc:
             # Race condition: another request saved the same hash concurrently.
             self._storage.delete(doc_id)
             existing = await self._repo.get_by_hash(storage_result["file_hash"])
             if existing:
-                logger.info("document.duplicate_skipped", existing_id=str(existing.id), filename=filename)
+                logger.info(
+                    "document.duplicate_skipped", existing_id=str(existing.id), filename=filename
+                )
                 return existing
             raise AppError(
                 code="DUPLICATE_FILE",
                 message="This file already exists but could not be retrieved",
                 status_code=409,
-            )
+            ) from exc
 
         logger.info("document.imported", doc_id=str(saved.id), file_type=file_type.value)
         return saved

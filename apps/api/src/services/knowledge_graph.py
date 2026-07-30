@@ -10,8 +10,8 @@ For MVP, uses existing tables (tags, projects, document_tags, document_projects)
 from uuid import UUID
 
 from domain.repositories import DocumentRepository, TagRepository
-from services.knowledge_agent import KnowledgeAgent
 from logging_config import get_logger
+from services.knowledge_agent import KnowledgeAgent
 
 logger = get_logger(__name__)
 

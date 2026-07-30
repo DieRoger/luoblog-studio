@@ -11,14 +11,12 @@ from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     Boolean,
     DateTime,
-    Enum,
     Float,
     ForeignKey,
     Index,
     Integer,
     String,
     Text,
-    UniqueConstraint,
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -33,6 +31,7 @@ class Base(DeclarativeBase):
 # Document
 # ---------------------------------------------------------------------------
 
+
 class DocumentModel(Base):
     __tablename__ = "documents"
 
@@ -43,11 +42,17 @@ class DocumentModel(Base):
     source_path: Mapped[str] = mapped_column(Text, nullable=False)
     file_hash: Mapped[str | None] = mapped_column(String(64), unique=True)
     meta: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    chunks: Mapped[list["DocumentChunkModel"]] = relationship(back_populates="document", cascade="all, delete-orphan")
+    chunks: Mapped[list["DocumentChunkModel"]] = relationship(
+        back_populates="document", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
         Index("idx_documents_status", "status", postgresql_where=text("deleted_at IS NULL")),
@@ -59,6 +64,7 @@ class DocumentModel(Base):
 # ---------------------------------------------------------------------------
 # DocumentChunk
 # ---------------------------------------------------------------------------
+
 
 class DocumentChunkModel(Base):
     __tablename__ = "document_chunks"
@@ -74,18 +80,19 @@ class DocumentChunkModel(Base):
     token_count: Mapped[int] = mapped_column(Integer, nullable=False)
     embedding = mapped_column(Vector(1024))  # BGE-m3 dimension
     meta: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
 
     document: Mapped["DocumentModel"] = relationship(back_populates="chunks")
 
-    __table_args__ = (
-        Index("idx_chunks_document_id", "document_id"),
-    )
+    __table_args__ = (Index("idx_chunks_document_id", "document_id"),)
 
 
 # ---------------------------------------------------------------------------
 # Article
 # ---------------------------------------------------------------------------
+
 
 class ArticleModel(Base):
     __tablename__ = "articles"
@@ -99,8 +106,12 @@ class ArticleModel(Base):
     quality_score: Mapped[float | None] = mapped_column(Float)
     topics = mapped_column(JSONB, nullable=False, default=list)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (
@@ -113,6 +124,7 @@ class ArticleModel(Base):
 # ArticleVersion
 # ---------------------------------------------------------------------------
 
+
 class ArticleVersionModel(Base):
     __tablename__ = "article_versions"
 
@@ -122,8 +134,12 @@ class ArticleVersionModel(Base):
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
     change_summary: Mapped[str | None] = mapped_column(Text)
-    agent_task_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("agent_tasks.id"))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    agent_task_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("agent_tasks.id")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
 
     __table_args__ = (Index("idx_article_versions_article", "article_id", "created_at"),)
 
@@ -131,6 +147,7 @@ class ArticleVersionModel(Base):
 # ---------------------------------------------------------------------------
 # Claim
 # ---------------------------------------------------------------------------
+
 
 class ClaimModel(Base):
     __tablename__ = "claims"
@@ -142,7 +159,9 @@ class ClaimModel(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="unverified")
     position: Mapped[int] = mapped_column(Integer, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
 
     __table_args__ = (Index("idx_claims_article", "article_id"),)
 
@@ -151,6 +170,7 @@ class ClaimModel(Base):
 # Evidence
 # ---------------------------------------------------------------------------
 
+
 class EvidenceModel(Base):
     __tablename__ = "evidence"
 
@@ -158,15 +178,15 @@ class EvidenceModel(Base):
     chunk_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("document_chunks.id"), nullable=False
     )
-    claim_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("claims.id")
-    )
+    claim_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("claims.id"))
     source_type: Mapped[str] = mapped_column(String(20), nullable=False, default="quote")
     content: Mapped[str] = mapped_column(Text, nullable=False)
     source_location: Mapped[str] = mapped_column(Text, nullable=False)
     confidence: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
     meta: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
 
     __table_args__ = (
         Index("idx_evidence_chunk", "chunk_id"),
@@ -177,6 +197,7 @@ class EvidenceModel(Base):
 # ---------------------------------------------------------------------------
 # AgentTask
 # ---------------------------------------------------------------------------
+
 
 class AgentTaskModel(Base):
     __tablename__ = "agent_tasks"
@@ -190,7 +211,9 @@ class AgentTaskModel(Base):
     cost: Mapped[float] = mapped_column(Float, default=0.0)
     latency_ms: Mapped[float | None] = mapped_column(Float)
     error_message: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
@@ -205,6 +228,7 @@ class AgentTaskModel(Base):
 # AgentTrace
 # ---------------------------------------------------------------------------
 
+
 class AgentTraceModel(Base):
     __tablename__ = "agent_traces"
 
@@ -218,12 +242,15 @@ class AgentTraceModel(Base):
     tokens: Mapped[int] = mapped_column(Integer, default=0)
     latency_ms: Mapped[float | None] = mapped_column(Float)
     error_message: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
 
 
 # ---------------------------------------------------------------------------
 # Tags (many-to-many)
 # ---------------------------------------------------------------------------
+
 
 class TagModel(Base):
     __tablename__ = "tags"
@@ -231,7 +258,9 @@ class TagModel(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
     is_ai_generated: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
 
 
 class DocumentTagModel(Base):
@@ -260,6 +289,7 @@ class ArticleTagModel(Base):
 # Project
 # ---------------------------------------------------------------------------
 
+
 class ProjectModel(Base):
     __tablename__ = "projects"
 
@@ -269,7 +299,9 @@ class ProjectModel(Base):
     description: Mapped[str | None] = mapped_column(Text)
     github_url: Mapped[str | None] = mapped_column(Text)
     tech_stack: Mapped[dict | None] = mapped_column(JSONB)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
 
 
 class DocumentProjectModel(Base):

@@ -2,14 +2,14 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.dependencies import get_db
 from domain.errors import AppError
 from infrastructure.persistence.repositories import TagRepository as TagRepoImpl
-from services.tags import TagService
 from logging_config import get_logger
+from services.tags import TagService
 
 logger = get_logger(__name__)
 

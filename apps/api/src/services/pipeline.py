@@ -5,12 +5,12 @@ Pipeline: Document → ParsedDocument → DocumentChunks → Embeddings → PGVe
 
 from uuid import UUID
 
-from domain.entities import Document, DocumentChunk
+from domain.embedding import EmbeddingService
+from domain.entities import Document
 from domain.enums import DocumentStatus
 from domain.errors import AppError, NotFoundError
-from domain.repositories import DocumentRepository, ChunkRepository
-from domain.parsing import DocumentParser, ParsedDocument
-from domain.embedding import EmbeddingService
+from domain.parsing import DocumentParser
+from domain.repositories import ChunkRepository, DocumentRepository
 from infrastructure.storage.local_fs import DocumentStorage
 from logging_config import get_logger
 
@@ -75,7 +75,7 @@ class KnowledgePipelineService:
 
             # Attach vectors to chunks (entity has no embedding field by design)
             # Use metadata for temporary storage during pipeline execution
-            for chunk, vec in zip(chunks, embeddings):
+            for chunk, vec in zip(chunks, embeddings, strict=False):
                 chunk.metadata["embedding"] = vec
 
             # Step 5: Save to PGVector
@@ -132,13 +132,15 @@ class KnowledgePipelineService:
             if doc_ids and chunk.document_id not in doc_ids:
                 continue
             doc = await self._doc_repo.get_by_id(chunk.document_id)
-            output.append({
-                "chunk_id": str(chunk.id),
-                "document_id": str(chunk.document_id),
-                "document_title": doc.title if doc else "Unknown",
-                "content": chunk.content,
-                "section": chunk.section,
-                "page": chunk.page,
-                "score": round(score, 4),
-            })
+            output.append(
+                {
+                    "chunk_id": str(chunk.id),
+                    "document_id": str(chunk.document_id),
+                    "document_title": doc.title if doc else "Unknown",
+                    "content": chunk.content,
+                    "section": chunk.section,
+                    "page": chunk.page,
+                    "score": round(score, 4),
+                }
+            )
         return output

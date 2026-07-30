@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.dependencies import get_db
 from domain.errors import AppError
 from infrastructure.persistence.repositories import ArticleRepository as ArticleRepoImpl
-from services.articles import ArticleService
 from logging_config import get_logger
+from services.articles import ArticleService
 
 logger = get_logger(__name__)
 
@@ -66,7 +66,9 @@ async def update_article(
     elif "status" in body:
         article = await service.update_status(article_id, body["status"])
     else:
-        raise AppError(code="NO_UPDATE_FIELDS", message="Provide content or status", status_code=422)
+        raise AppError(
+            code="NO_UPDATE_FIELDS", message="Provide content or status", status_code=422
+        )
     return {"data": _article_to_dict(article)}
 
 

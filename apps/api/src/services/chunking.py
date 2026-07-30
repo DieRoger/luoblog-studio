@@ -138,16 +138,24 @@ class ChunkingService:
             # If a single paragraph is longer than max_chars, split by sentence
             if len(para) > max_chars:
                 # Flush current buffer first (if it meets minimum size)
-                _flush_or_merge(buffer, chunks, section_name, page,
-                                section_level, document_id, min_chunk_chars, idx)
+                _flush_or_merge(
+                    buffer,
+                    chunks,
+                    section_name,
+                    page,
+                    section_level,
+                    document_id,
+                    min_chunk_chars,
+                    idx,
+                )
                 if chunks and chunks[-1].chunk_index == idx:
                     idx += 1
                 buffer = ""
 
                 # Split long paragraph into sentence-chunks
-                sentence_chunks = _split_long_paragraph(para, section_name, page,
-                                                        section_level, document_id,
-                                                        max_chars, idx)
+                sentence_chunks = _split_long_paragraph(
+                    para, section_name, page, section_level, document_id, max_chars, idx
+                )
                 chunks.extend(sentence_chunks)
                 idx += len(sentence_chunks)
                 continue
@@ -158,15 +166,24 @@ class ChunkingService:
                     buffer += "\n\n"
                 buffer += para
             else:
-                _flush_or_merge(buffer, chunks, section_name, page,
-                                section_level, document_id, min_chunk_chars, idx)
+                _flush_or_merge(
+                    buffer,
+                    chunks,
+                    section_name,
+                    page,
+                    section_level,
+                    document_id,
+                    min_chunk_chars,
+                    idx,
+                )
                 if chunks and chunks[-1].chunk_index == idx:
                     idx += 1
                 buffer = para
 
         # Flush remaining buffer
-        _flush_or_merge(buffer, chunks, section_name, page,
-                        section_level, document_id, min_chunk_chars, idx)
+        _flush_or_merge(
+            buffer, chunks, section_name, page, section_level, document_id, min_chunk_chars, idx
+        )
         return chunks
 
     @staticmethod
@@ -219,8 +236,7 @@ def _flush_or_merge(
         prev.content += "\n\n" + buffer.strip()
         prev.token_count = ChunkingService.count_tokens(prev.content)
         return
-    chunks.append(_make_chunk(buffer, section_name, page,
-                              section_level, document_id, index))
+    chunks.append(_make_chunk(buffer, section_name, page, section_level, document_id, index))
 
 
 def _split_long_paragraph(
@@ -249,16 +265,18 @@ def _split_long_paragraph(
         if len(remaining) > max_chars:
             # Flush current buffer first
             if buffer:
-                chunks.append(_make_chunk(buffer, section_name, page,
-                                          section_level, document_id, idx))
+                chunks.append(
+                    _make_chunk(buffer, section_name, page, section_level, document_id, idx)
+                )
                 idx += 1
                 buffer = ""
             # Split into word-level chunks of max_chars
             while remaining:
                 chunk_text = remaining[:max_chars]
                 remaining = remaining[max_chars:]
-                chunks.append(_make_chunk(chunk_text, section_name, page,
-                                          section_level, document_id, idx))
+                chunks.append(
+                    _make_chunk(chunk_text, section_name, page, section_level, document_id, idx)
+                )
                 idx += 1
             continue
 
@@ -268,12 +286,12 @@ def _split_long_paragraph(
             buffer += remaining
         else:
             if buffer:
-                chunks.append(_make_chunk(buffer, section_name, page,
-                                          section_level, document_id, idx))
+                chunks.append(
+                    _make_chunk(buffer, section_name, page, section_level, document_id, idx)
+                )
                 idx += 1
             buffer = remaining
 
     if buffer:
-        chunks.append(_make_chunk(buffer, section_name, page,
-                                  section_level, document_id, idx))
+        chunks.append(_make_chunk(buffer, section_name, page, section_level, document_id, idx))
     return chunks

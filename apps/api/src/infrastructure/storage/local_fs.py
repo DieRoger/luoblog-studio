@@ -5,9 +5,9 @@ import shutil
 from pathlib import Path
 
 from config import settings
-from logging_config import get_logger
 from domain.enums import SUFFIX_TO_FILETYPE
 from domain.errors import AppError
+from logging_config import get_logger
 
 logger = get_logger(__name__)
 

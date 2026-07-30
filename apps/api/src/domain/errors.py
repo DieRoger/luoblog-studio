@@ -26,6 +26,7 @@ class AppError(Exception):
 
 # --- Domain Errors ---
 
+
 class NotFoundError(AppError):
     def __init__(self, entity: str, entity_id: str) -> None:
         super().__init__(
@@ -45,6 +46,7 @@ class InvalidStateTransition(AppError):
 
 
 # --- Infrastructure Errors ---
+
 
 class ParsingError(AppError):
     def __init__(self, file_type: str, reason: str) -> None:
@@ -74,6 +76,7 @@ class LLMError(AppError):
 
 
 # --- Validation Errors ---
+
 
 class ValidationError(AppError):
     def __init__(self, field: str, reason: str) -> None:

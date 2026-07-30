@@ -6,15 +6,16 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.dependencies import get_db
-from domain.parsing import DocumentParser
+from config import settings
 from domain.embedding import EmbeddingService
 from domain.errors import AppError
-from infrastructure.storage.local_fs import DocumentStorage
-from infrastructure.persistence.repositories import DocumentRepository, ChunkRepository, TagRepository as TagRepoImpl
+from domain.parsing import DocumentParser
 from infrastructure.embedding.api_embedding import LiteLLMEmbeddingService
-from services.pipeline import KnowledgePipelineService
-from config import settings
+from infrastructure.persistence.repositories import ChunkRepository, DocumentRepository
+from infrastructure.persistence.repositories import TagRepository as TagRepoImpl
+from infrastructure.storage.local_fs import DocumentStorage
 from logging_config import get_logger
+from services.pipeline import KnowledgePipelineService
 
 logger = get_logger(__name__)
 
@@ -64,7 +65,7 @@ async def process_document(
             code="PROCESS_FAILED",
             message=f"Failed to process document: {exc}",
             status_code=500,
-        )
+        ) from exc
 
     return {
         "data": {
@@ -102,7 +103,9 @@ async def search_knowledge(
                 tag_repo = TagRepoImpl(db)
                 matching = await tag_repo.search_by_tags(tag_names)
                 doc_ids = set(matching)
-        results = await pipeline.search(query=q, top_k=top_k, search_type=search_type, doc_ids=doc_ids)
+        results = await pipeline.search(
+            query=q, top_k=top_k, search_type=search_type, doc_ids=doc_ids
+        )
     except AppError:
         raise
     except Exception as exc:
@@ -111,7 +114,7 @@ async def search_knowledge(
             code="SEARCH_FAILED",
             message=f"Search failed: {exc}",
             status_code=500,
-        )
+        ) from exc
 
     return {
         "data": results,

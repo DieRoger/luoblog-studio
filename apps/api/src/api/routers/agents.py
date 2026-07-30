@@ -1,20 +1,17 @@
 """Agent API — expose Writing Agent and Review Agent as HTTP endpoints."""
 
-from uuid import UUID
-
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.dependencies import get_db
-from config import settings
 from domain.embedding import EmbeddingService
 from domain.errors import AppError
-from infrastructure.persistence.repositories import ChunkRepository, DocumentRepository
 from infrastructure.embedding.api_embedding import LiteLLMEmbeddingService
-from services.writing import WritingAgent
-from services.review import ReviewAgent
-from services.grounding import GroundingChecker
+from infrastructure.persistence.repositories import ChunkRepository, DocumentRepository
 from logging_config import get_logger
+from services.grounding import GroundingChecker
+from services.review import ReviewAgent
+from services.writing import WritingAgent
 
 logger = get_logger(__name__)
 
@@ -54,7 +51,7 @@ async def agent_debate(body: dict) -> dict:
         result = await agent.debate(topic=topic, personas=body.get("personas"))
     except Exception as exc:
         logger.exception("agent.debate_failed", topic=topic)
-        raise AppError(code="DEBATE_FAILED", message=str(exc), status_code=500)
+        raise AppError(code="DEBATE_FAILED", message=str(exc), status_code=500) from exc
 
     return {"data": result}
 
@@ -77,7 +74,7 @@ async def agent_write(
         raise
     except Exception as exc:
         logger.exception("agent.write_failed", topic=topic)
-        raise AppError(code="WRITE_FAILED", message=str(exc), status_code=500)
+        raise AppError(code="WRITE_FAILED", message=str(exc), status_code=500) from exc
 
     return {
         "data": {
@@ -88,8 +85,7 @@ async def agent_write(
                     "heading": s.heading,
                     "content": s.content,
                     "citations": [
-                        {"source": c.source_title, "score": c.score}
-                        for c in s.citations
+                        {"source": c.source_title, "score": c.score} for c in s.citations
                     ],
                 }
                 for s in result.sections
@@ -115,7 +111,7 @@ async def agent_review(
         raise
     except Exception as exc:
         logger.exception("agent.review_failed")
-        raise AppError(code="REVIEW_FAILED", message=str(exc), status_code=500)
+        raise AppError(code="REVIEW_FAILED", message=str(exc), status_code=500) from exc
 
     return {
         "data": {

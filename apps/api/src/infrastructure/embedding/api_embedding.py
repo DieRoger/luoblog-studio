@@ -7,22 +7,24 @@ provider supported by LiteLLM's embedding API.
 import math
 from types import MappingProxyType
 
+from config import settings
 from domain.embedding import EmbeddingService
 from domain.errors import EmbeddingError
 from logging_config import get_logger
-from config import settings
 
 logger = get_logger(__name__)
 
 DEFAULT_BATCH_SIZE = 100
 
 # Known embedding model dimensions — immutable for safety.
-_DIM_MAP: MappingProxyType[str, int] = MappingProxyType({
-    "openai/text-embedding-3-small": 1536,
-    "openai/text-embedding-3-large": 3072,
-    "openai/text-embedding-ada-002": 1536,
-    "deepseek/deepseek-embedding": 1024,
-})
+_DIM_MAP: MappingProxyType[str, int] = MappingProxyType(
+    {
+        "openai/text-embedding-3-small": 1536,
+        "openai/text-embedding-3-large": 3072,
+        "openai/text-embedding-ada-002": 1536,
+        "deepseek/deepseek-embedding": 1024,
+    }
+)
 
 
 def _l2_normalize(vec: list[float]) -> list[float]:

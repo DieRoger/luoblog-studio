@@ -7,7 +7,6 @@ Pipeline:
 import asyncio
 import json
 import re
-import time
 from pathlib import Path
 
 from config import settings
@@ -72,10 +71,7 @@ class WritingAgent:
         headings = outline.get("sections", [])
         logger.info("writing.sections", topic=topic, sections=len(headings))
 
-        tasks = [
-            self._write_single_section(topic, h, context_str)
-            for h in headings
-        ]
+        tasks = [self._write_single_section(topic, h, context_str) for h in headings]
         sections = await asyncio.gather(*tasks)
 
         # Step 4: Assemble
@@ -104,22 +100,22 @@ class WritingAgent:
         output = []
         for chunk, score in results:
             doc = await self._doc_repo.get_by_id(chunk.document_id)
-            output.append({
-                "chunk_id": str(chunk.id),
-                "document_title": doc.title if doc else "Unknown",
-                "section": chunk.section or "",
-                "content": chunk.content,
-                "score": round(score, 4),
-            })
+            output.append(
+                {
+                    "chunk_id": str(chunk.id),
+                    "document_title": doc.title if doc else "Unknown",
+                    "section": chunk.section or "",
+                    "content": chunk.content,
+                    "score": round(score, 4),
+                }
+            )
         return output
 
     # ------------------------------------------------------------------
     # Step 2: Outline
     # ------------------------------------------------------------------
 
-    async def _generate_outline(
-        self, topic: str, context: str, max_sections: int
-    ) -> dict:
+    async def _generate_outline(self, topic: str, context: str, max_sections: int) -> dict:
         """Generate JSON outline from topic + research context."""
         prompt = (
             f"You are a technical writing assistant. Given a topic and research context, "
@@ -145,9 +141,7 @@ class WritingAgent:
     # Step 3: Write a single section
     # ------------------------------------------------------------------
 
-    async def _write_single_section(
-        self, topic: str, heading: str, context: str
-    ) -> Section:
+    async def _write_single_section(self, topic: str, heading: str, context: str) -> Section:
         """Write one section with inline citations."""
         prompt = (
             f"You are a technical writer with deep AI engineering expertise.\n\n"
@@ -216,7 +210,9 @@ class WritingAgent:
     @staticmethod
     def _load_system_prompt() -> str:
         """Load writing system prompt from file, with fallback."""
-        prompt_path = Path(__file__).resolve().parents[4] / "agents" / "prompts" / "writing" / "system.md"
+        prompt_path = (
+            Path(__file__).resolve().parents[4] / "agents" / "prompts" / "writing" / "system.md"
+        )
         try:
             if prompt_path.exists():
                 text = prompt_path.read_text(encoding="utf-8")
@@ -271,9 +267,11 @@ class WritingAgent:
                         attempt=attempt + 1,
                         max_retries=MAX_RETRIES,
                     )
-                    raise LLMError(f"LLM call failed after {attempt + 1} attempt(s): {exc}") from exc
+                    raise LLMError(
+                        f"LLM call failed after {attempt + 1} attempt(s): {exc}"
+                    ) from exc
 
-                delay = RETRY_BASE_DELAY * (2 ** attempt)
+                delay = RETRY_BASE_DELAY * (2**attempt)
                 logger.warning(
                     "writing.llm_retry",
                     attempt=attempt + 1,

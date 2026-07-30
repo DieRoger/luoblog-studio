@@ -8,7 +8,6 @@ from pathlib import Path
 
 from config import settings
 from domain.embedding import EmbeddingService
-from domain.errors import LLMError
 from domain.repositories import ChunkRepository, DocumentRepository
 from logging_config import get_logger
 
@@ -40,14 +39,24 @@ class ResearchAgent:
         # 1. Search Knowledge Hub
         embedding = await self._embedder.embed_one(topic)
         if not embedding:
-            return {"topic_analysis": {}, "sources": [], "research_gaps": [], "recommended_angles": []}
+            return {
+                "topic_analysis": {},
+                "sources": [],
+                "research_gaps": [],
+                "recommended_angles": [],
+            }
 
         results = await self._chunk_repo.vector_search(embedding, top_k)
         context = await self._format_context(results)
 
         if not context:
             logger.warning("research.no_results", topic=topic)
-            return {"topic_analysis": {"core_concepts": [topic]}, "sources": [], "research_gaps": ["No relevant documents found in knowledge base"], "recommended_angles": []}
+            return {
+                "topic_analysis": {"core_concepts": [topic]},
+                "sources": [],
+                "research_gaps": ["No relevant documents found in knowledge base"],
+                "recommended_angles": [],
+            }
 
         # 2. LLM analysis
         raw = await self._call_llm(topic, context)
@@ -61,16 +70,15 @@ class ResearchAgent:
         for chunk, score in results:
             doc = await self._doc_repo.get_by_id(chunk.document_id)
             title = doc.title if doc else "Unknown"
-            lines.append(f"[Score: {score:.2f}] From: {title} | Section: {chunk.section or ''}\n{chunk.content[:500]}")
+            lines.append(
+                f"[Score: {score:.2f}] From: {title} | Section: {chunk.section or ''}\n{chunk.content[:500]}"
+            )
         return "\n\n".join(lines)
 
     async def _call_llm(self, topic: str, context: str) -> str:
         import litellm
 
-        prompt = (
-            f"Research Topic: {topic}\n\n"
-            f"Knowledge Base Results:\n{context}"
-        )
+        prompt = f"Research Topic: {topic}\n\nKnowledge Base Results:\n{context}"
         response = await litellm.acompletion(
             model=f"{settings.llm_provider}/{settings.llm_model}",
             messages=[

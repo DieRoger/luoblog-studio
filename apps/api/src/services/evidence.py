@@ -10,8 +10,8 @@ from domain.entities import Claim, Evidence
 from domain.enums import ClaimStatus, SourceType
 from domain.grounding import GroundingReport
 from domain.repositories import ClaimRepository, EvidenceRepository
-from services.grounding import GroundingChecker
 from logging_config import get_logger
+from services.grounding import GroundingChecker
 
 logger = get_logger(__name__)
 
@@ -29,9 +29,7 @@ class EvidenceService:
         self._evidence_repo = evidence_repo
         self._checker = grounding_checker
 
-    async def process_article(
-        self, article_id: UUID, article_text: str
-    ) -> GroundingReport:
+    async def process_article(self, article_id: UUID, article_text: str) -> GroundingReport:
         """Extract claims, verify against KB, store Claim + Evidence records.
 
         Returns a GroundingReport showing which claims are grounded.
@@ -74,16 +72,18 @@ class EvidenceService:
         result = []
         for claim in claims:
             evidence_list = await self._evidence_repo.get_by_claim(claim.id)
-            result.append({
-                "claim": claim.content,
-                "status": claim.status.value,
-                "evidence": [
-                    {
-                        "source": e.source_location,
-                        "content": e.content[:200],
-                        "confidence": e.confidence,
-                    }
-                    for e in evidence_list
-                ],
-            })
+            result.append(
+                {
+                    "claim": claim.content,
+                    "status": claim.status.value,
+                    "evidence": [
+                        {
+                            "source": e.source_location,
+                            "content": e.content[:200],
+                            "confidence": e.confidence,
+                        }
+                        for e in evidence_list
+                    ],
+                }
+            )
         return result

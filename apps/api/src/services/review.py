@@ -5,13 +5,12 @@ When a GroundingChecker is provided, includes real evidence coverage data.
 """
 
 import json
-import re
 from pathlib import Path
 
 from config import settings
 from domain.errors import AppError, LLMError
-from domain.value_objects import ReviewScores
 from domain.review import ReviewIssue, ReviewReport
+from domain.value_objects import ReviewScores
 from logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -25,14 +24,16 @@ class ReviewAgent:
     def __init__(
         self,
         system_prompt: str | None = None,
-        grounding_checker = None,
+        grounding_checker=None,
     ) -> None:
         self._system_prompt = system_prompt or self._load_system_prompt()
         self._checker = grounding_checker
 
     async def review(self, article_text: str, section_count: int = 0) -> ReviewReport:
         if not article_text.strip():
-            raise AppError(code="EMPTY_ARTICLE", message="Cannot review empty article", status_code=422)
+            raise AppError(
+                code="EMPTY_ARTICLE", message="Cannot review empty article", status_code=422
+            )
 
         # Run Grounding Checker if available — gives real evidence data
         grounding_context = ""
@@ -53,7 +54,7 @@ class ReviewAgent:
                         grounding_context += "- Unverified claims:\n"
                         for v in report.verifications:
                             if not v.is_grounded:
-                                grounding_context += f"  * \"{v.claim_text[:80]}...\"\n"
+                                grounding_context += f'  * "{v.claim_text[:80]}..."\n'
             except Exception as exc:
                 logger.warning("review.grounding_failed", error=str(exc))
 
@@ -144,12 +145,14 @@ class ReviewAgent:
 
         issues = []
         for item in data.get("issues", []):
-            issues.append(ReviewIssue(
-                severity=item.get("severity", "suggestion"),
-                location=item.get("location", ""),
-                message=item.get("message", ""),
-                suggestion=item.get("suggestion", ""),
-            ))
+            issues.append(
+                ReviewIssue(
+                    severity=item.get("severity", "suggestion"),
+                    location=item.get("location", ""),
+                    message=item.get("message", ""),
+                    suggestion=item.get("suggestion", ""),
+                )
+            )
 
         return ReviewReport(
             scores=scores,
@@ -160,7 +163,9 @@ class ReviewAgent:
     @staticmethod
     def _load_system_prompt() -> str:
         """Load review prompt from file."""
-        prompt_path = Path(__file__).resolve().parents[4] / "agents" / "prompts" / "review" / "system.md"
+        prompt_path = (
+            Path(__file__).resolve().parents[4] / "agents" / "prompts" / "review" / "system.md"
+        )
         if not prompt_path.exists():
             logger.warning("review.prompt_file_missing", path=str(prompt_path))
             return "Review this article. Score 0-10 for: technical_accuracy, evidence_coverage, writing_quality, originality."
@@ -184,16 +189,20 @@ class ReviewAgent:
     def _fallback_report() -> ReviewReport:
         return ReviewReport(
             scores=ReviewScores(7.0, 7.0, 7.0, 7.0),
-            issues=[ReviewIssue(
-                severity="warning",
-                location="",
-                message="Could not parse LLM response as JSON",
-                suggestion="Re-run the review",
-            )],
+            issues=[
+                ReviewIssue(
+                    severity="warning",
+                    location="",
+                    message="Could not parse LLM response as JSON",
+                    suggestion="Re-run the review",
+                )
+            ],
             summary="Review parsing failed. Using default scores.",
         )
 
 
 def _is_retryable(exc: Exception) -> bool:
     msg = str(exc).lower()
-    return any(k in msg for k in ["rate limit", "timeout", "503", "502", "429", "service unavailable"])
+    return any(
+        k in msg for k in ["rate limit", "timeout", "503", "502", "429", "service unavailable"]
+    )

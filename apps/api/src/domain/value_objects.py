@@ -6,6 +6,7 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class Score:
     """Score with guaranteed 0.0–1.0 range."""
+
     value: float
 
     def __post_init__(self) -> None:
@@ -16,6 +17,7 @@ class Score:
 @dataclass(frozen=True)
 class Confidence:
     """Evidence confidence, 0.0–1.0."""
+
     value: float
 
     def __post_init__(self) -> None:

@@ -49,11 +49,13 @@ class KnowledgeAgent:
                 continue
             seen_docs.add(chunk.document_id)
             doc = await self._doc_repo.get_by_id(chunk.document_id)
-            related.append({
-                "document_id": str(chunk.document_id),
-                "title": doc.title if doc else "Unknown",
-                "relevance": round(score, 4),
-            })
+            related.append(
+                {
+                    "document_id": str(chunk.document_id),
+                    "title": doc.title if doc else "Unknown",
+                    "relevance": round(score, 4),
+                }
+            )
 
         return related
 
@@ -64,10 +66,12 @@ class KnowledgeAgent:
         for doc in docs:
             related = await self.find_related(doc.id, top_k=3)
             if related:
-                connections.append({
-                    "source_id": str(doc.id),
-                    "source_title": doc.title,
-                    "related": related,
-                })
+                connections.append(
+                    {
+                        "source_id": str(doc.id),
+                        "source_title": doc.title,
+                        "related": related,
+                    }
+                )
         logger.info("knowledge.scan_complete", documents=len(docs), connections=len(connections))
         return connections

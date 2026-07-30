@@ -4,9 +4,6 @@ Pattern:
   Topic → 2-3 Agent Personas (independent perspectives) → Moderator (synthesis)
 """
 
-import json
-from pathlib import Path
-
 from config import settings
 from domain.errors import LLMError
 from logging_config import get_logger
@@ -83,11 +80,13 @@ class DebateAgent:
         perspectives = []
         for persona in selected:
             content = await self._call_persona(persona, topic)
-            perspectives.append({
-                "name": persona["name"],
-                "role": persona["role"],
-                "content": content,
-            })
+            perspectives.append(
+                {
+                    "name": persona["name"],
+                    "role": persona["role"],
+                    "content": content,
+                }
+            )
             logger.info("debate.perspective", persona=persona["name"])
 
         # Phase 2: Moderator synthesizes all perspectives

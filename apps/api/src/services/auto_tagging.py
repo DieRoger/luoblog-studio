@@ -1,7 +1,5 @@
 """Auto-tagging Service — generates tags for documents using LLM."""
 
-from pathlib import Path
-
 from config import settings
 from domain.errors import LLMError
 from domain.repositories import TagRepository
@@ -48,6 +46,7 @@ class AutoTaggingService:
 
     async def _call_llm(self, prompt: str) -> str:
         import litellm
+
         try:
             response = await litellm.acompletion(
                 model=f"{settings.llm_provider}/{settings.llm_model}",

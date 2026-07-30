@@ -4,8 +4,6 @@ Uses GitHub API to create/update files in a configured repo.
 Supports personal access tokens for authentication.
 """
 
-import os
-from pathlib import Path
 from uuid import UUID
 
 from domain.entities import Article
@@ -50,14 +48,21 @@ class GithubSyncService:
         """
         article = await self._article_repo.get_by_id(article_id)
         if article is None:
-            raise AppError(code="ARTICLE_NOT_FOUND", message=f"Article {article_id} not found", status_code=404)
+            raise AppError(
+                code="ARTICLE_NOT_FOUND", message=f"Article {article_id} not found", status_code=404
+            )
 
         md_content = self._format_markdown(article)
         file_path = self._build_file_path(article)
         message = commit_message or f"Publish: {article.title}"
 
         result = await self._github_upsert(file_path, md_content, message)
-        logger.info("github.published", article_id=str(article_id), path=file_path, url=result.get("html_url"))
+        logger.info(
+            "github.published",
+            article_id=str(article_id),
+            path=file_path,
+            url=result.get("html_url"),
+        )
         return result
 
     async def _github_upsert(self, path: str, content: str, message: str) -> dict:
@@ -102,7 +107,10 @@ class GithubSyncService:
         import httpx
 
         url = f"{API_BASE}/repos/{self._owner}/{self._repo}/contents/{path}?ref={self._branch}"
-        headers = {"Authorization": f"Bearer {self._token}", "Accept": "application/vnd.github.v3+json"}
+        headers = {
+            "Authorization": f"Bearer {self._token}",
+            "Accept": "application/vnd.github.v3+json",
+        }
 
         async with httpx.AsyncClient() as client:
             resp = await client.get(url, headers=headers)
@@ -140,4 +148,5 @@ class GithubSyncService:
 def _b64encode(text: str) -> str:
     """Base64 encode for GitHub API content."""
     import base64
+
     return base64.b64encode(text.encode("utf-8")).decode("ascii")

@@ -2,15 +2,15 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, UploadFile, File, Form, Query
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.dependencies import get_db
 from domain.errors import AppError
-from infrastructure.storage.local_fs import DocumentStorage
 from infrastructure.persistence.repositories import DocumentRepository
-from services.knowledge import KnowledgeService
+from infrastructure.storage.local_fs import DocumentStorage
 from logging_config import get_logger
+from services.knowledge import KnowledgeService
 
 logger = get_logger(__name__)
 
@@ -59,7 +59,7 @@ async def upload_document(
             code="UPLOAD_FAILED",
             message=f"Failed to process file: {exc}",
             status_code=500,
-        )
+        ) from exc
 
     return {
         "data": {

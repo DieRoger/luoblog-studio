@@ -4,18 +4,18 @@ Usage:
     uvicorn src.main:create_app --factory --host 0.0.0.0 --port 8000 --reload
 """
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from config import settings
-from logging_config import configure as configure_logging
+from api.errors import register_exception_handlers
 from api.middleware import RequestContextMiddleware
 from api.router import api_router
-from api.errors import register_exception_handlers
+from config import settings
 from infrastructure.persistence.database import engine
+from logging_config import configure as configure_logging
 
 
 @asynccontextmanager

@@ -7,8 +7,9 @@ NotImplementedError so the import chain is verified at startup.
 
 from collections.abc import AsyncGenerator
 
-from infrastructure.persistence.database import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from infrastructure.persistence.database import get_session
 
 # ---------------------------------------------------------------------------
 # Database

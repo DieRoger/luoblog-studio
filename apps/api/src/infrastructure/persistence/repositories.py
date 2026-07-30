@@ -1,23 +1,24 @@
 """SQLAlchemy implementation of domain repository interfaces."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import select, func, delete as sa_delete, and_
+from sqlalchemy import and_, func, select
+from sqlalchemy import delete as sa_delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from domain.entities import Document
 from domain.enums import DocumentStatus, FileType
-from domain.errors import AppError, NotFoundError
+from domain.errors import NotFoundError
 from domain.repositories import DocumentRepository as DocRepoABC
 from infrastructure.persistence.models import (
-    DocumentModel,
-    TagModel,
-    DocumentTagModel,
     ArticleModel,
     ClaimModel,
+    DocumentModel,
+    DocumentTagModel,
     EvidenceModel,
+    TagModel,
 )
 
 
@@ -71,8 +72,10 @@ class DocumentRepository(DocRepoABC):
         offset: int = 0,
     ) -> tuple[list[Document], int]:
         base = select(DocumentModel).where(DocumentModel.deleted_at.is_(None))
-        count_q = select(func.count()).select_from(DocumentModel).where(
-            DocumentModel.deleted_at.is_(None)
+        count_q = (
+            select(func.count())
+            .select_from(DocumentModel)
+            .where(DocumentModel.deleted_at.is_(None))
         )
 
         if status:
@@ -91,7 +94,7 @@ class DocumentRepository(DocRepoABC):
         orm = await self._session.get(DocumentModel, doc_id)
         if orm is None:
             raise NotFoundError("Document", str(doc_id))
-        orm.deleted_at = datetime.now(timezone.utc)
+        orm.deleted_at = datetime.now(UTC)
         await self._session.flush()
 
     async def update_status(self, doc_id: UUID, status: DocumentStatus) -> None:
@@ -99,7 +102,7 @@ class DocumentRepository(DocRepoABC):
         if orm is None:
             raise NotFoundError("Document", str(doc_id))
         orm.status = status.value
-        orm.updated_at = datetime.now(timezone.utc)
+        orm.updated_at = datetime.now(UTC)
         await self._session.flush()
 
     # ------------------------------------------------------------------
@@ -132,7 +135,6 @@ class ChunkRepository:
         self._session = session
 
     async def save_batch(self, chunks: list["DocumentChunk"]) -> list["DocumentChunk"]:
-        from domain.entities import DocumentChunk as DC
 
         orm_models = []
         for c in chunks:
@@ -155,7 +157,6 @@ class ChunkRepository:
         return chunks
 
     async def get_by_document(self, doc_id: UUID) -> list["DocumentChunk"]:
-        from domain.entities import DocumentChunk as DC
 
         stmt = (
             select(DocumentChunkModel)
@@ -168,7 +169,6 @@ class ChunkRepository:
     async def vector_search(
         self, embedding: list[float], top_k: int = 10
     ) -> list[tuple["DocumentChunk", float]]:
-        from domain.entities import DocumentChunk as DC
 
         vec = embedding  # pgvector handles list input
         stmt = (
@@ -181,8 +181,7 @@ class ChunkRepository:
         )
         result = await self._session.execute(stmt)
         return [
-            (_chunk_to_entity(row.DocumentChunkModel), 1.0 - float(row.distance))
-            for row in result
+            (_chunk_to_entity(row.DocumentChunkModel), 1.0 - float(row.distance)) for row in result
         ]
 
     async def hybrid_search(
@@ -196,9 +195,7 @@ class ChunkRepository:
 
         vec = embedding
         tsq = func.plainto_tsquery("english", query)
-        ts_rank = func.ts_rank(
-            func.to_tsvector("english", DocumentChunkModel.content), tsq
-        )
+        ts_rank = func.ts_rank(func.to_tsvector("english", DocumentChunkModel.content), tsq)
         vec_score = (1.0 - DocumentChunkModel.embedding.cosine_distance(vec)).label("vec_score")
 
         stmt = (
@@ -212,8 +209,7 @@ class ChunkRepository:
         )
         result = await self._session.execute(stmt)
         return [
-            (_chunk_to_entity(row.DocumentChunkModel), float(row.combined_score))
-            for row in result
+            (_chunk_to_entity(row.DocumentChunkModel), float(row.combined_score)) for row in result
         ]
 
     async def delete_by_document(self, doc_id: UUID) -> None:
@@ -324,7 +320,6 @@ class ArticleRepository:
         self._session = session
 
     async def save(self, article: "Article") -> "Article":
-        from domain.entities import Article as A
 
         orm = ArticleModel(
             id=article.id,
@@ -342,7 +337,6 @@ class ArticleRepository:
         return _article_to_entity(orm)
 
     async def get_by_id(self, article_id: UUID) -> "Article | None":
-        from domain.entities import Article as A
 
         orm = await self._session.get(ArticleModel, article_id)
         return _article_to_entity(orm) if orm else None
@@ -350,11 +344,10 @@ class ArticleRepository:
     async def list_all(
         self, status: str | None = None, limit: int = 50, offset: int = 0
     ) -> tuple[list["Article"], int]:
-        from domain.entities import Article as A
 
         base = select(ArticleModel).where(ArticleModel.deleted_at.is_(None))
-        count_q = select(func.count()).select_from(ArticleModel).where(
-            ArticleModel.deleted_at.is_(None)
+        count_q = (
+            select(func.count()).select_from(ArticleModel).where(ArticleModel.deleted_at.is_(None))
         )
         if status:
             base = base.where(ArticleModel.status == status)
@@ -366,12 +359,11 @@ class ArticleRepository:
         return [_article_to_entity(r) for r in rows.scalars().all()], total
 
     async def delete(self, article_id: UUID) -> None:
-        from domain.entities import Article as A
 
         orm = await self._session.get(ArticleModel, article_id)
         if orm is None:
             raise NotFoundError("Article", str(article_id))
-        orm.deleted_at = datetime.now(timezone.utc)
+        orm.deleted_at = datetime.now(UTC)
         await self._session.flush()
 
     async def update_status(self, article_id: UUID, status: str) -> None:
@@ -379,7 +371,7 @@ class ArticleRepository:
         if orm is None:
             raise NotFoundError("Article", str(article_id))
         orm.status = status
-        orm.updated_at = datetime.now(timezone.utc)
+        orm.updated_at = datetime.now(UTC)
         await self._session.flush()
 
 
@@ -409,7 +401,6 @@ class ClaimRepository:
         self._session = session
 
     async def save(self, claim: "Claim") -> "Claim":
-        from domain.entities import Claim as C
 
         orm = ClaimModel(
             id=claim.id,
@@ -424,9 +415,12 @@ class ClaimRepository:
         return _claim_to_entity(orm)
 
     async def get_by_article(self, article_id: UUID) -> list["Claim"]:
-        from domain.entities import Claim as C
 
-        stmt = select(ClaimModel).where(ClaimModel.article_id == article_id).order_by(ClaimModel.position)
+        stmt = (
+            select(ClaimModel)
+            .where(ClaimModel.article_id == article_id)
+            .order_by(ClaimModel.position)
+        )
         result = await self._session.execute(stmt)
         return [_claim_to_entity(r) for r in result.scalars().all()]
 
@@ -438,7 +432,6 @@ class EvidenceRepository:
         self._session = session
 
     async def save(self, evidence: "Evidence") -> "Evidence":
-        from domain.entities import Evidence as E
 
         orm = EvidenceModel(
             id=evidence.id,
@@ -456,14 +449,12 @@ class EvidenceRepository:
         return _evidence_to_entity(orm)
 
     async def get_by_claim(self, claim_id: UUID) -> list["Evidence"]:
-        from domain.entities import Evidence as E
 
         stmt = select(EvidenceModel).where(EvidenceModel.claim_id == claim_id)
         result = await self._session.execute(stmt)
         return [_evidence_to_entity(r) for r in result.scalars().all()]
 
     async def get_by_chunk(self, chunk_id: UUID) -> list["Evidence"]:
-        from domain.entities import Evidence as E
 
         stmt = select(EvidenceModel).where(EvidenceModel.chunk_id == chunk_id)
         result = await self._session.execute(stmt)

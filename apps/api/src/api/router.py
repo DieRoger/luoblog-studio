@@ -2,14 +2,16 @@
 
 from fastapi import APIRouter
 
-from api.routers import documents, knowledge, tags, articles, agents, publish
+from api.routers import agents, articles, documents, knowledge, publish, tags
 
 api_router = APIRouter()
+
 
 # Health
 @api_router.get("/health")
 async def health_check() -> dict:
     return {"status": "ok"}
+
 
 # Feature routers
 api_router.include_router(documents.router)

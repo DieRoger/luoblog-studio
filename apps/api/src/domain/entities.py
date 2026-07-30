@@ -17,8 +17,6 @@ from domain.enums import (
     TaskStatus,
 )
 from domain.errors import InvalidStateTransition
-from domain.value_objects import Confidence, ReviewScores, Score
-
 
 # ---------------------------------------------------------------------------
 # Document
@@ -177,7 +175,11 @@ class AgentTask:
         self.output = output
         self.total_tokens = tokens
         self.cost = cost
-        self.latency_ms = (datetime.utcnow() - self.started_at).total_seconds() * 1000 if self.started_at else None
+        self.latency_ms = (
+            (datetime.utcnow() - self.started_at).total_seconds() * 1000
+            if self.started_at
+            else None
+        )
         self.completed_at = datetime.utcnow()
 
     def fail(self, error: str) -> None:

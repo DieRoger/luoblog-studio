@@ -4,7 +4,7 @@ from uuid import UUID
 
 from domain.entities import Article
 from domain.enums import ArticleStatus
-from domain.errors import AppError, NotFoundError
+from domain.errors import NotFoundError
 from domain.repositories import ArticleRepository
 from logging_config import get_logger
 
@@ -46,7 +46,9 @@ class ArticleService:
         logger.info("article.status_changed", article_id=str(article_id), status=status)
         return article
 
-    async def list(self, status: str | None = None, page: int = 1, page_size: int = 20) -> tuple[list[Article], int]:
+    async def list(
+        self, status: str | None = None, page: int = 1, page_size: int = 20
+    ) -> tuple[list[Article], int]:
         offset = (page - 1) * page_size
         return await self._repo.list_all(status=status, limit=page_size, offset=offset)
 

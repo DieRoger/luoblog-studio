@@ -84,9 +84,7 @@ class PdfParser(DocumentParser):
             return doc.metadata["subject"].strip()
         return doc.name or "Untitled"
 
-    def _extract_sections(
-        self, doc: fitz.Document
-    ) -> tuple[list[ParsedSection], str]:
+    def _extract_sections(self, doc: fitz.Document) -> tuple[list[ParsedSection], str]:
         """Iterate pages, detect heading blocks, group into sections.
 
         First pass collects font sizes for global median, then second

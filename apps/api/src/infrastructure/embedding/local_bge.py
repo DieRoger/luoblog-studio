@@ -7,10 +7,10 @@ On first run, downloads model weights (~2.2 GB for BAAI/bge-m3).
 Subsequent runs use a local cache.
 """
 
+from config import settings
 from domain.embedding import EmbeddingService
 from domain.errors import EmbeddingError
 from logging_config import get_logger
-from config import settings
 
 logger = get_logger(__name__)
 
@@ -40,7 +40,9 @@ class LocalBgeEmbeddingService(EmbeddingService):
 
             import anyio
 
-            fn = functools.partial(model.encode, texts, normalize_embeddings=True, show_progress_bar=False)
+            fn = functools.partial(
+                model.encode, texts, normalize_embeddings=True, show_progress_bar=False
+            )
             embeddings = await anyio.to_thread.run_sync(fn)
         except Exception as exc:
             logger.exception("embedding.local_failed", model=self._model_name)
@@ -75,9 +77,7 @@ class LocalBgeEmbeddingService(EmbeddingService):
             import anyio
             from sentence_transformers import SentenceTransformer
 
-            self._model = await anyio.to_thread.run_sync(
-                SentenceTransformer, self._model_name
-            )
+            self._model = await anyio.to_thread.run_sync(SentenceTransformer, self._model_name)
             logger.info("embedding.model_loaded", model=self._model_name)
             return self._model
         except ImportError as exc:
@@ -85,6 +85,4 @@ class LocalBgeEmbeddingService(EmbeddingService):
                 "sentence-transformers not installed. Run: pip install sentence-transformers"
             ) from exc
         except Exception as exc:
-            raise EmbeddingError(
-                f"Failed to load local model '{self._model_name}': {exc}"
-            ) from exc
+            raise EmbeddingError(f"Failed to load local model '{self._model_name}': {exc}") from exc

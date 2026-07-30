@@ -39,15 +39,23 @@ class PaperAgent:
         )
 
         raw = await self._call_llm(prompt)
-        return self._parse_json(raw, {
-            "title": title, "abstract_summary": "",
-            "contributions": [], "method_summary": "",
-            "experiments": [], "limitations": [],
-            "engineering_insights": [], "key_quotes": [],
-        })
+        return self._parse_json(
+            raw,
+            {
+                "title": title,
+                "abstract_summary": "",
+                "contributions": [],
+                "method_summary": "",
+                "experiments": [],
+                "limitations": [],
+                "engineering_insights": [],
+                "key_quotes": [],
+            },
+        )
 
     async def _call_llm(self, prompt: str) -> str:
         import litellm
+
         try:
             response = await litellm.acompletion(
                 model=f"{settings.llm_provider}/{settings.llm_model}",
