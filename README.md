@@ -75,7 +75,7 @@ apps/api/         FastAPI backend (21 modules, 184 tests)
 agents/           Agent prompts + definitions
 database/         PostgreSQL schema + PGVector (16 tables)
 tests/            pytest unit tests (zero-infrastructure mocking)
-docs/             ADRs, architecture, blog posts (18 articles)
+docs/             ADRs, architecture, blog posts (10 articles)
 ```
 
 Clean Architecture with strict dependency direction: **API → Service → Domain ← Infrastructure**.
