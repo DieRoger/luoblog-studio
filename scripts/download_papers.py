@@ -9,9 +9,9 @@ DOWNLOAD_DIR = Path("papers")
 async def download_one(url, dest, sem):
     async with sem:
         try:
-            async with httpx.AsyncClient(timeout=30, follow_redirects=True, trust_env=False) as c:
+            async with httpx.AsyncClient(timeout=15, follow_redirects=True, trust_env=False) as c:
                 r = await c.get(url)
-                if r.status_code == 200 and len(r.content) > 10000:
+                if r.status_code == 200 and len(r.content) > 5000:
                     dest.write_bytes(r.content)
                     return True, len(r.content) // 1024
                 return False, r.status_code
