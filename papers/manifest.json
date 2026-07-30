@@ -1,0 +1,127 @@
+[
+  {
+    "arxiv_id": "https://doi.org/10.1007/s10791-008-9066-8",
+    "title": "A comparison of extrinsic clustering evaluation metrics based on formal constraints",
+    "pdf_url": "https://link.springer.com/content/pdf/10.1007/s10791-008-9066-8.pdf"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.1145/3626772.3657957",
+    "title": "Evaluating Retrieval Quality in Retrieval-Augmented Generation",
+    "pdf_url": "https://doi.org/10.1145/3626772.3657957"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.1162/tacl_a_00530",
+    "title": "Improving the Domain Adaptation of Retrieval Augmented Generation (RAG) Models for Open Domain Question Answering",
+    "pdf_url": "https://direct.mit.edu/tacl/article-pdf/doi/10.1162/tacl_a_00530/2067834/tacl_a_00530.pdf"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.48550/arxiv.2312.10997",
+    "title": "Retrieval-Augmented Generation for Large Language Models: A Survey",
+    "pdf_url": "https://arxiv.org/pdf/2312.10997"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.18653/v1/2023.emnlp-main.495",
+    "title": "Active Retrieval Augmented Generation",
+    "pdf_url": "https://aclanthology.org/2023.emnlp-main.495.pdf"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.1609/aaai.v38i16.29728",
+    "title": "Benchmarking Large Language Models in Retrieval-Augmented Generation",
+    "pdf_url": "https://ojs.aaai.org/index.php/AAAI/article/download/29728/31250"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.5281/zenodo.18717227",
+    "title": "Affordance-Compiled Intelligence: Observable-Only Cognitive Impedance Matching for No-Meta LLM-Integrated Systems",
+    "pdf_url": "https://arxiv.org/pdf/2005.11401"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.1007/s11704-024-40231-1",
+    "title": "A survey on large language model based autonomous agents",
+    "pdf_url": "https://link.springer.com/content/pdf/10.1007/s11704-024-40231-1.pdf"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.48550/arxiv.2308.03688",
+    "title": "AgentBench: Evaluating LLMs as Agents",
+    "pdf_url": "https://arxiv.org/pdf/2308.03688"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.1145/3703155",
+    "title": "A Survey on Hallucination in Large Language Models: Principles, Taxonomy, Challenges, and Open Questions",
+    "pdf_url": "https://dl.acm.org/doi/pdf/10.1145/3703155"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.18653/v1/2023.emnlp-main.557",
+    "title": "SelfCheckGPT: Zero-Resource Black-Box Hallucination Detection for Generative Large Language Models",
+    "pdf_url": "https://aclanthology.org/2023.emnlp-main.557.pdf"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.1038/s41586-024-07421-0",
+    "title": "Detecting hallucinations in large language models using semantic entropy",
+    "pdf_url": "https://www.nature.com/articles/s41586-024-07421-0.pdf"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.18653/v1/d13-1170",
+    "title": "Recursive Deep Models for Semantic Compositionality Over a Sentiment Treebank",
+    "pdf_url": "https://aclanthology.org/D13-1170.pdf"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.1162/0891201053630264",
+    "title": "The Proposition Bank: An Annotated Corpus of Semantic Roles",
+    "pdf_url": "http://www.mitpressjournals.org/doi/pdf/10.1162/0891201053630264"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.1017/s0140525x01003922",
+    "title": "The magical number 4 in short-term memory: A reconsideration of mental storage capacity",
+    "pdf_url": "https://www.cambridge.org/core/services/aop-cambridge-core/content/view/44023F1147D4A1D44BDC0AD226838496/S0140525X01003922a.pdf/div-class-title-the-magical-number-4-in-short-term-memory-a-reconsideration-of-mental-storage-capacity-div.pdf"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.18653/v1/2021.naacl-main.466",
+    "title": "RocketQA: An Optimized Training Approach to Dense Passage Retrieval for Open-Domain Question Answering",
+    "pdf_url": "https://aclanthology.org/2021.naacl-main.466.pdf"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.18653/v1/2021.emnlp-main.224",
+    "title": "RocketQAv2: A Joint Training Method for Dense Passage Retrieval and Passage Re-ranking",
+    "pdf_url": "https://aclanthology.org/2021.emnlp-main.224.pdf"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.18653/v1/2020.emnlp-main.550",
+    "title": "Dense Passage Retrieval for Open-Domain Question Answering",
+    "pdf_url": "https://www.aclweb.org/anthology/2020.emnlp-main.550.pdf"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.1145/3404835.3463238",
+    "title": "Pyserini: A Python Toolkit for Reproducible Information Retrieval Research with Sparse and Dense Representations",
+    "pdf_url": "https://dl.acm.org/doi/pdf/10.1145/3404835.3463238"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.1038/s41746-021-00437-0",
+    "title": "COVID-19 information retrieval with deep-learning based semantic search, question answering, and abstractive summarization",
+    "pdf_url": "https://www.nature.com/articles/s41746-021-00437-0.pdf"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.1007/978-3-319-93935-3",
+    "title": "Entity-Oriented Search",
+    "pdf_url": "http://www.oapen.org/search?identifier=1007038"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.18653/v1/2024.findings-acl.137",
+    "title": "M3-Embedding: Multi-Linguality, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation",
+    "pdf_url": "https://aclanthology.org/2024.findings-acl.137.pdf"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.1371/journal.pgen.1000721",
+    "title": "Evolutionary Convergence and Nitrogen Metabolism in Blattabacterium strain Bge, Primary Endosymbiont of the Cockroach Blattella germanica",
+    "pdf_url": "https://journals.plos.org/plosgenetics/article/file?id=10.1371/journal.pgen.1000721&type=printable"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.3758/bf03196313",
+    "title": "Grounding language in action",
+    "pdf_url": "https://link.springer.com/content/pdf/10.3758/BF03196313.pdf"
+  },
+  {
+    "arxiv_id": "https://doi.org/10.18653/v1/d18-1015",
+    "title": "Temporally Grounding Natural Sentence in Video",
+    "pdf_url": "https://www.aclweb.org/anthology/D18-1015.pdf"
+  }
+]

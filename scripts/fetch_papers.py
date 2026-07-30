@@ -82,7 +82,7 @@ async def search(query: str, limit: int) -> list[dict]:
 
 async def download(url: str, dest: Path) -> bool:
     try:
-        async with httpx.AsyncClient(timeout=120, follow_redirects=True, trust_env=False) as c:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True, trust_env=False) as c:
             r = await c.get(url)
             if r.status_code == 200 and len(r.content) > 10000:
                 dest.write_bytes(r.content)
@@ -152,7 +152,7 @@ async def main():
 
     print(f"\n完成: {ok_count}/{len(all_papers)} 篇")
     (DOWNLOAD_DIR / "manifest.json").write_text(
-        json.dumps([{"arxiv_id": p["arxiv_id"], "title": p["title"]} for p in all_papers], indent=2, ensure_ascii=False)
+        json.dumps([{"arxiv_id": p["arxiv_id"], "title": p["title"], "pdf_url": p["pdf_url"]} for p in all_papers], indent=2, ensure_ascii=False)
     )
 
 
