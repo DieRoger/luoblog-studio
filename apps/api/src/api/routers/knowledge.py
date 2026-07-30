@@ -78,7 +78,7 @@ async def process_document(
 async def search_knowledge(
     q: str = Query(..., min_length=1, description="Search query"),
     top_k: int = Query(10, ge=1, le=50),
-    search_type: str = Query("hybrid", regex="^(vector|hybrid)$"),
+    search_type: str = Query("hybrid", pattern="^(vector|hybrid)$"),
     tags: str = Query(None, description="Comma-separated tag names to filter by"),
     pipeline: KnowledgePipelineService = Depends(get_pipeline_service),
     db: AsyncSession = Depends(get_db),
