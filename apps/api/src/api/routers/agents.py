@@ -40,6 +40,25 @@ def _build_review_agent(db: AsyncSession) -> ReviewAgent:
     return ReviewAgent(grounding_checker=checker)
 
 
+@router.post("/debate")
+async def agent_debate(body: dict) -> dict:
+    """Run a multi-agent debate on a topic with multiple perspectives."""
+    from services.debate import DebateAgent
+
+    topic = (body.get("topic") or "").strip()
+    if not topic:
+        raise AppError(code="MISSING_TOPIC", message="Topic is required", status_code=422)
+
+    agent = DebateAgent()
+    try:
+        result = await agent.debate(topic=topic, personas=body.get("personas"))
+    except Exception as exc:
+        logger.exception("agent.debate_failed", topic=topic)
+        raise AppError(code="DEBATE_FAILED", message=str(exc), status_code=500)
+
+    return {"data": result}
+
+
 @router.post("/write")
 async def agent_write(
     body: dict,
