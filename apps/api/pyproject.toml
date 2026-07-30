@@ -68,8 +68,18 @@ disallow_untyped_defs = true
 disallow_incomplete_defs = true
 disable_error_code = ["type-arg", "no-any-return", "no-untyped-def"]
 
-[tool.mypy-overrides]
-"src/infrastructure/persistence/repositories.py" = {ignore_errors = true}
-"src/domain/repositories.py" = {ignore_errors = true}
-"src/infrastructure/parsing/pdf_parser.py" = {ignore_missing_imports = true}
-"src/infrastructure/embedding/local_bge.py" = {ignore_missing_imports = true}
+[[tool.mypy.overrides]]
+module = "src.infrastructure.persistence.repositories"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "src.domain.repositories"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "src.infrastructure.parsing.pdf_parser"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "src.infrastructure.embedding.local_bge"
+ignore_missing_imports = true
