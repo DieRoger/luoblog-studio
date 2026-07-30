@@ -1,4 +1,4 @@
-"""论文搜索与下载 — 使用 Semantic Scholar API（不受 arXiv 限流影响）
+"""论文搜索与下载 — 使用 OpenAlex API（中国可用，无需代理）
 
 搜索与技术栈相关论文，下载PDF并上传到LuoBlog知识库。
 """
@@ -6,11 +6,12 @@
 import asyncio
 import json
 import os
+import re
 from pathlib import Path
 
 import httpx
 
-API_BASE = "https://api.semanticscholar.org/graph/v1/paper/search"
+API_BASE = "https://api.openalex.org/works"
 
 QUERIES = [
     "RAG evaluation metrics",
@@ -19,7 +20,7 @@ QUERIES = [
     "hallucination detection LLM",
     "semantic chunking documents",
     "dense passage retrieval",
-    "hybrid search vector",
+    "hybrid search vector BM25",
     "BGE embedding model",
     "evidence grounding fact",
     "sentence transformer embedding",
@@ -31,25 +32,48 @@ PAPERS_PER_QUERY = 3
 MAX_TOTAL = 25
 DOWNLOAD_DIR = Path("papers")
 
+# 只搜索元数据而不下载（arXiv PDF 下载可能被网络限制）
+SKIP_DOWNLOAD = True
+
 
 async def search(query: str, limit: int) -> list[dict]:
-    params = {"query": query, "limit": limit, "fields": "title,url,externalIds"}
+    """Search OpenAlex for papers matching a query."""
+    params = {
+        "search": query,
+        "per-page": limit,
+        "sort": "relevance_score:desc",
+        "filter": "open_access.is_oa:true",
+    }
     url = f"{API_BASE}?{'&'.join(f'{k}={v}' for k, v in params.items())}"
+    headers = {"User-Agent": "LuoBlog/1.0 (luorunjie@gmail.com)"}
+
     async with httpx.AsyncClient(timeout=30, trust_env=False) as c:
         try:
-            r = await c.get(url)
+            r = await c.get(url, headers=headers)
             if r.status_code != 200:
                 print(f"  API {r.status_code}")
                 return []
             data = r.json()
             papers = []
-            for p in data.get("data", []):
-                ext = p.get("externalIds") or {}
-                arxiv_id = ext.get("ArXiv", "")
-                title = (p.get("title") or "").strip()
-                pdf = f"https://arxiv.org/pdf/{arxiv_id}.pdf" if arxiv_id else ""
-                if pdf:
-                    papers.append({"title": title, "pdf_url": pdf, "arxiv_id": arxiv_id})
+            for work in data.get("results", []):
+                title = (work.get("title") or "").strip()
+                oa_url = work.get("open_access", {}).get("oa_url", "")
+                doi = work.get("doi", "")
+                primary_loc = work.get("primary_location", {}) or {}
+                pdf_url = oa_url or ""
+                # Try to get PDF from primary location
+                if not pdf_url and primary_loc:
+                    pdf_url = primary_loc.get("pdf_url", "") or ""
+                # Extract arXiv ID if available
+                arxiv_id = ""
+                ids = work.get("ids", {}) or {}
+                arxiv_url = ids.get("arxiv", "")
+                if arxiv_url:
+                    arxiv_id = arxiv_url.split("/")[-1]
+                if not pdf_url and arxiv_id:
+                    pdf_url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
+                if pdf_url:
+                    papers.append({"title": title, "pdf_url": pdf_url, "arxiv_id": arxiv_id or doi or ""})
             return papers
         except Exception as e:
             print(f"  Error: {e}")
@@ -91,12 +115,21 @@ async def main():
             break
 
     all_papers = all_papers[:MAX_TOTAL]
-    print(f"\n共 {len(all_papers)} 篇, 开始下载...")
+    print(f"\n共 {len(all_papers)} 篇:")
+    if SKIP_DOWNLOAD:
+        print("（SKIP_DOWNLOAD=True，仅输出元数据）")
 
     ok_count = 0
     for i, p in enumerate(all_papers, 1):
         fn = f"{p['arxiv_id']}.pdf"
         dest = DOWNLOAD_DIR / fn
+
+        if SKIP_DOWNLOAD:
+            print(f"  [{i}] {p['title'][:70]}")
+            print(f"    PDF: {p['pdf_url']}")
+            ok_count += 1
+            continue
+
         if dest.exists():
             ok_count += 1
             continue
