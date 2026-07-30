@@ -42,3 +42,7 @@ workspace/
 
 # Docker
 .postgres-data/
+
+# Downloaded papers
+papers/*.pdf
+!papers/manifest.json
