@@ -109,7 +109,10 @@ Use the same prompt structure every time (see `blog_rules.md` and `CONTENT_STRAT
 - **Tone**: Professional, honest, evidence-driven. Write as an engineer documenting a real project, not a teacher or marketer.
 - **Evidence**: Include test counts, before/after comparisons, architecture diagrams (Mermaid).
 - **Code**: Show snippets only when they explain an important engineering decision. Never explain code line by line.
-- **Length**: Medium article (2000-3500 words) or Deep dive (4000-7000 words).
+- **Length**: **硬性要求 ≥ 3000 词**（含代码块）。标准 3000~4500 词，深度长文 4500~7000 词。低于 3000 词视为不合格，需补充真实素材后扩充。绝不为了凑字数用空话填充——长度要求的是实质内容。
+- **Evidence Sources**: **证据来源 ≥ 3 类**（真实代码 / 项目文档与实测 / 论文 / 个人经验）。禁止只依赖论文。引用论文前必须从知识库检索确认真实存在并读其摘要，禁止凭印象描述论文内容。
+- **Originality**: **必须通过查重自查**——不是 handover/README/论文摘要的转述；至少包含一个文档里没有、代码里读出来的发现；有自己的判断和观点。
+- **Anti-AI-Flavor**: **AI 味自查**——禁止模板化开头、空洞过渡、排比堆砌、万金油结论；第一人称只写真实发生的事；每篇至少 1 处真实失败记录。
 
 ### Blog Naming Convention
 

@@ -15,6 +15,7 @@ from domain.repositories import DocumentRepository as DocRepoABC
 from infrastructure.persistence.models import (
     ArticleModel,
     ClaimModel,
+    DocumentChunkModel,
     DocumentModel,
     DocumentTagModel,
     EvidenceModel,
@@ -150,6 +151,8 @@ class ChunkRepository:
             )
             if hasattr(c, "embedding") and c.embedding:
                 orm.embedding = c.embedding
+            elif "embedding" in (c.metadata or {}):
+                orm.embedding = c.metadata["embedding"]
             self._session.add(orm)
             orm_models.append(orm)
 
